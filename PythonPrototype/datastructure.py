@@ -32,6 +32,15 @@ def testInterpolation():
     temp = cell.trilinear(p)
     output = [temp._x,temp._y, temp._z]
     print(output)
+
+"""Dot/Scalar Product for 3D Vectors"""
+def dot(a,b):
+        a0 = Point3D(0,0,0)
+        b0 = Point3D(0,0,0)
+        a0 = a
+        b0 = b
+        return a0._x*b0._x + a0._y*b0._y + a0._z*b0._z
+
     
 class Point3D:
 #    _x = 0.0
@@ -39,7 +48,7 @@ class Point3D:
 #    _z = 0.0
     
     def _length(self):
-        return math.sqrt(self._x**2+self._y**2+self._z**2)
+        return math.sqrt(self._x**2.0+self._y**2.0+self._z**2.0)
 
     def __init__(self,x,y,z):
         self._x = x
@@ -54,6 +63,7 @@ class Point3D:
     
     def __repr__(self):
         return "("+str(self._x)+","+str(self._y)+","+str(self._z)+")"
+    
         
 class Vertex:
 #---class Attributes should only be readed

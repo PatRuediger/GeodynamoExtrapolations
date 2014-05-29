@@ -105,17 +105,14 @@ def sphericalHarmoAnalysis(x):
     #print("Pos Spherical: "+ str(v._x)+","+str(v._y)+","+str(v._z))
     result=Point3D(0,0,0)
 
-#    for l in range(1,2):
-#        for m in range(l+1):
-    m = 1
-    l = 1
-    result._x+= -((ar/v._z)**(l +2))*deltaSN(m,l,math.cos(v._x))*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
-  #  print(-g[l][m],m,math.sin(m*v._y),h[l][m],m,math.cos(m*v._y))
-    result._y+= -(ar/(v._z))**(l +2)*SN(m,l,cos(v._x))*(-g[l][m]*m*math.sin(m*v._y)+h[l][m]*m*math.cos(m*v._y))
-#    result._y+=(-g[l][m]*m*math.sin(m*v._y)+h[l][m]*m*math.cos(m*v._y))
-    result._z+= -(l +1)*((ar/v._z)**(l +2))*SN(m,l,cos(v._x))*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
-#            print((l+1)*((a/v._z)**(l+2)),SN(m,l,cos(v._x)),g[l][m]*math.cos(m*v._y),h[l][m]*math.sin(m*v._y))
-#            print("sha", l,m,result)
+    for l in range(1,2):
+        for m in range(l+1):
+#    m = 0
+#    l = 3
+            result._x+= -((ar/v._z)**(l +2))*deltaSN(m,l,math.cos(v._x))*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
+            result._y+= -(ar/(v._z))**(l +2)*SN(m,l,cos(v._x))*(-g[l][m]*m*math.sin(m*v._y)+h[l][m]*m*math.cos(m*v._y))
+            result._z+= -(l +1)*((ar/v._z)**(l +2))*SN(m,l,cos(v._x))*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
+
     """    for l in range(1,n+1):
         for m in range(l+1):
             result._x+=((a/v._z)**(l+1))*deltaSN(m,l,math.cos(v._x))*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
@@ -123,16 +120,9 @@ def sphericalHarmoAnalysis(x):
             result._y+=((a/v._z)**(l+1))*SN(m,l,cos(v._x))*(-g[l][m]*m*math.sin(m*v._y)+h[l][m]*m*math.cos(m*v._y))
             result._z+=(l+1)*((a/v._z)**(l+2))*SN(m,l,cos(v._x))*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
             #print(l,m,result)"""
-
-    
-   # print("sha",result)
-    #print(result)
-    #Coord Transformation
-    print("sha,spherical:",result)
+#    print("sha,spherical:",result)
     vf = toCartesianVecfield(v,result)
-    print("sha,cartesian:",vf)
-    #print(v)
-    #print(str(v._x) +"," + str(v._y) +"," +str(v._z))    
+    print("sha,cartesian:",vf)  
     return vf
     
 #Schmidt-Normalized Legendrefunction    
@@ -259,8 +249,8 @@ def toSphericalVecfield(x,v):
     """ Pos x has to be in spherical coordinates 
     """
     vf=datastructure.Point3D(0,0,0)
-    vf._z= v._x*math.sin(x._x)*math.cos(x._y) + v._y*math.sin(x._x)*math.sin(x._y) + v._z*math.cos(x._y)
-    vf._x = v._x*math.cos(x._x)*math.cos(x._y) + v._y*math.cos(x._x)*math.sin(x._y) - v._y*math.sin(x._y)
+    vf._z= v._x*math.sin(x._x)*math.cos(x._y) + v._y*math.sin(x._x)*math.sin(x._y) + v._z*math.cos(x._x)
+    vf._x = v._x*math.cos(x._x)*math.cos(x._y) + v._y*math.cos(x._x)*math.sin(x._y) - v._y*math.sin(x._x)
     vf._y = -v._x*math.sin(x._y) + v._y*math.cos(x._y) 
     return vf
     
@@ -327,7 +317,7 @@ def eulerForward(x,v,a,step=1):
     a: evaluation fucntion a(x,v,dt) (must be callable) should return a number like object (e.g. trilinear interpolation)
     step: initial timestep, only usefull, if it takes very long to find the first step (number)"""
     #error treshold for adaptive stepsize
-    err = 1.0e-4  
+    err = 0.9961947384098608 
     x0 = datastructure.Point3D(x._x,x._y,x._z)
     v0 = datastructure.Point3D(v._x,v._y,v._z)
     
@@ -335,52 +325,49 @@ def eulerForward(x,v,a,step=1):
     
     x1=x0.add(v0.mult(dt))
     v1=a(x,v,dt)
+    """Scaling the Vectorfield"""
+    v1 = v1.mult(1.0e-04)
     x2=x0.add(v0.mult(dt/2))
     counter =0
-#    print(x1,v1,x2)
+    print(x1,v1,x2)
 #    v2=a(x,v,dt/2) 
     #adaptive stepsize
-    while (abs(x1._x-x2._x)>= err) and (abs(x1._y-x2._y)>= err) and (abs(x1._z-x2._z) >= err):  
+    
+    while ((datastructure.dot(x1,x2)/(x1._length() * x2._length())) < err) :  
         counter+=1
         dt/=2
-        x1=x0.add(v0.mult(dt))
+        x1=x0.add(v1.mult(dt))
         v1=a(x,v,dt)
-        x2=x0.add(v0.mult(dt/2))
-#        v2=a(x,v,dt/2) 
-#    print(counter,dt)
-#    print("Stepsize found")
-#    t2=dt
-#    print(t2,t)
-#    while t2 < t:
-#        x1,v1,t3 = eulerForward(x1,v1,a,dt)
-#        t2+=t3
-#        print(t2,t)
-#        exit()
-    
+        """Scaling the Vectorfield"""
+        v1 = v1.mult(1.0e-04)
+        x2=x0.add(v1.mult(dt/2))
     return Point3D(x1._x,x1._y,x1._z),Point3D(v1._x,v1._y,v1._z),dt
+    
 def testSHA(x,y,z,mx,my,mz):
     loadGaussCoef("D:\Uni\GeodynamicsProject\GausCoef.txt")
-    for theta in range(10,3141,100):
-        tpr = datastructure.Point3D(theta/1000.0, math.pi, 2.91)
-        xyz = toCartesian(tpr)
-        plotPos_x.append(xyz._x)
-        plotPos_y.append(xyz._z)
-        v = evalSHA(xyz, None, None)
-        plotValue_x.append(v._x)
-        plotValue_y.append(v._z)
-        vf = toSphericalVecfield(tpr,v)
-        print(tpr,vf,v)
-        
+    
+    """for theta in range(10,2*3141,100):
+        for radius in range(135,292,30):
+            tpr = datastructure.Point3D(theta/1000.0, math.pi, radius/100.0)
+            xyz = toCartesian(tpr)
+            plotPos_x.append(xyz._x)
+            plotPos_y.append(xyz._z)
+            v = evalSHA(xyz, None, None)
+            plotValue_x.append(v._x)
+            plotValue_y.append(v._z)
+            vf = toSphericalVecfield(tpr,v)
+            print(tpr,vf,v)
+            
     drawVectorField(plotPos_x,plotPos_y,plotValue_x,plotValue_y)
-    return
+    return"""
     
     start = datastructure.Point3D(x,y,z)
-    t=0.0
+    t=0.0001
     sl=[]
     vl=[]
-    tmax = 0.002
+    tmax = 0.009
     #initial stepsize, optional
-    step = 0.001
+    step = 0.0001
     nextPos = start
     plotPos_x.append(start._x)
     plotPos_y.append(start._y)
@@ -399,12 +386,11 @@ def testSHA(x,y,z,mx,my,mz):
         plotValue_z.append(vf._z)
         sl.append(xf)
         vl.append(vf)
-        nextPos = sl[len(sl)-1]
-        nextVal = vl[len(vl)-1]
+        nextPos = xf
+        nextVal = vf
         t+=t2
-#        t+=step
-#    drawStreamLine(plotPos_x,plotPos_y,plotPos_z)
-    drawVectorField(plotPos_x,plotPos_y,plotValue_x,plotValue_y)
+    drawStreamLine(plotPos_x,plotPos_y,plotPos_z)
+#    drawVectorField(plotPos_x,plotPos_y,plotValue_x,plotValue_y)
         
 
 def loadGaussCoef(filename):
