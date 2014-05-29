@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
 Created on Thu May 15 09:19:17 2014
@@ -39,7 +40,7 @@ h=ndarray((6,6))
 #earth radius
 #a = 6371000
 ar= 2.91
-# data Object 
+# data Object
 data = AvsUcdAscii()
 
 # x,y,z should be list of number type objects
@@ -51,7 +52,6 @@ def drawStreamLine(x,y,z):
     ax.set_ylabel('Y Label')
     ax.set_zlabel('Z Label')
 
-plt.show()
 
 
 def drawVectorField(x,y,vx,vy):
@@ -59,13 +59,13 @@ def drawVectorField(x,y,vx,vy):
     ax= fig.add_subplot(111)
     ax.scatter(x,y)
     ax.quiver(x,y,vx,vy)
-    
-#computes a whole streamline    
+
+#computes a whole streamline
 def streamline(start,t_max,step):
     """
     @Input:start postion (Point3D), max number of timesteps (Integer), stepsize (float)
     @Output:Returns a list of tuples, evaluated points from the rk4 method which can be plottet afterwards
-    Last item in the list can be uses as SHA input    
+    Last item in the list can be uses as SHA input
     """
     t=0
     sl=[]
@@ -90,8 +90,8 @@ def evalf(x,v,dt):
     return data.getValue(x)
 
 def evalSHA(x,v,dt):
-    return sphericalHarmoAnalysis(x)    
-    
+    return sphericalHarmoAnalysis(x)
+
 def sphericalHarmoAnalysis(x):
     """Evaluates the spherical harmonics equation for the magnetic field, with degree n
     @Input: Point3D Position
@@ -107,11 +107,11 @@ def sphericalHarmoAnalysis(x):
 
     for l in range(1,2):
         for m in range(l+1):
-#    m = 0
-#    l = 3
-            result._x+= -((ar/v._z)**(l +2))*deltaSN(m,l,math.cos(v._x))*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
+    #m = 1
+    #l = 1
+            result._x+= -((ar/v._z)**(l +2))*(-math.sin(v._x))*deltaSN(m,l,math.cos(v._x))*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
             result._y+= -(ar/(v._z))**(l +2)*SN(m,l,cos(v._x))*(-g[l][m]*m*math.sin(m*v._y)+h[l][m]*m*math.cos(m*v._y))
-            result._z+= -(l +1)*((ar/v._z)**(l +2))*SN(m,l,cos(v._x))*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
+            result._z+= (l +1)*((ar/v._z)**(l +2))*SN(m,l,cos(v._x))*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
 
     """    for l in range(1,n+1):
         for m in range(l+1):
@@ -122,33 +122,33 @@ def sphericalHarmoAnalysis(x):
             #print(l,m,result)"""
 #    print("sha,spherical:",result)
     vf = toCartesianVecfield(v,result)
-    print("sha,cartesian:",vf)  
+    print("sha,cartesian:",vf)
     return vf
-    
-#Schmidt-Normalized Legendrefunction    
+
+#Schmidt-Normalized Legendrefunction
 def SN(m,l,x):
     #print("compute Schmidt- Normalized Legendre " + str(l)+" , " + str(m))
     return ((-1)**m)*math.sqrt(2.0*math.factorial(l-m)/math.factorial(l+m))*Legendre(m,l,x)
 def deltaSN(m,l,x):
     #print("compute derivative Schmidt- Normalized Legendre " + str(l)+" , " + str(m))
-    return ((-1)**m)*math.sqrt(2.0*math.factorial(l-m)/math.factorial(l+m))*deltaLegendre(m,l,x)   
+    return ((-1)**m)*math.sqrt(2.0*math.factorial(l-m)/math.factorial(l+m))*deltaLegendre(m,l,x)
 
 
-#Legendre Functions till degree 4    
+#Legendre Functions till degree 4
 def Legendre(m,l,x):
     if l==1 and m==0:
         return x
     elif l==1 and m==1:
   #      if x**2 >1.0:
   #          return 0.0
-  #      else: 
-            return math.sqrt(1.0-x**2.0)*(-1.0)
+  #      else:
+            return -math.sqrt(1.0-x**2.0)
     elif l==2 and m ==0:
         return 0.5*(3.0*x**2.0 -1.0)
     elif l==2 and m==1:
   #      if x**2 > 1.0:
   #          return 0.0
-  #      else: 
+  #      else:
             return -3.0*x*math.sqrt(1.0-x**2.0)
     elif l==2 and m ==2:
         return 3.0*(x**2.0 -1.0)*(-1.0)
@@ -157,7 +157,7 @@ def Legendre(m,l,x):
     elif l==3 and m==1:
    #     if x**2 >1.0:
    #         return 0.0
-   #     else: 
+   #     else:
             return(-3.0/2.0)*math.sqrt(1.0-x**2.0)*(5.0*x**2.0 -1.0)
     elif l==3 and m ==2:
         return -15.0*x*(x**2.0 -1.0)
@@ -168,7 +168,7 @@ def Legendre(m,l,x):
     elif l==4 and m==1:
    #     if x**2 >1.0:
    #         return 0.0
-   #    else: 
+   #    else:
             return -(5.0/2.0)*math.sqrt(1.0-x**2.0)*(7.0**3.0 -3.0*x)
     elif l==4 and m==2:
         return -(15.0/2.0)*(x**2.0 -1.0)*(7.0*x**2.0 -1.0)
@@ -176,22 +176,22 @@ def Legendre(m,l,x):
         return 105.0*x*(1.0-x**2.0)**(3.0/2.0)
     elif l==4 and m==4:
         return 105*(x**2.0 -1.0)**2.0
-        
-#First derivative of Legende Functions        
+
+#First derivative of Legende Functions
 def deltaLegendre(m,l,x):
     if l==1 and m == 0:
         return 1.0
     elif l==1 and m==1:
 #        if x**2 > 1.0:
 #            return 0.0
-#        else: 
+#        else:
             return x/math.sqrt(1.0-x**2.0)
     elif l==2 and m ==0:
         return 3.0*x
     elif l==2 and m==1:
  #       if x**2 >1.0:
  #           return 0.0
- #      else: 
+ #      else:
             return (6.0*x**2.0 -3.0)/(math.sqrt(1.0-x**2.0))
     elif l==2 and m ==2:
         return -6.0*x
@@ -200,38 +200,38 @@ def deltaLegendre(m,l,x):
     elif l==3 and m==1:
  #       if x**2 > 1.0:
  #           return 0.0
- #       else: 
+ #       else:
             return (3.0*x*(15.0*x*2.0 -11.0))/(2.0*math.sqrt(1.0-x**2.0))
     elif l==3 and m ==2:
         return 15.0 -45.0*x**2.0
     elif l==3 and m ==3:
  #       if x**2 > 1.0:
  #          return 0.0
- #       else: 
+ #       else:
             return 45.0*x*math.sqrt(1.0-x**2.0)
     elif l==4 and m ==0:
         return (5.0/2.0)*x*(7.0*x**-3.0)
     elif l==4 and m==1:
  #       if x**2 > 1.0:
  #           return 0.0
- #       else: 
+ #       else:
             return (5.0*(28.0*x**4.0 - 27.0*x**2.0 + 3.0))/(2*math.sqrt(1.0-x**2.0))
     elif l==4 and m==2:
         return -30.0*x*(7.0*x**2.0 -4.0)
     elif l==4 and m==3:
  #       if (x**2) > 1.0:
  #           return 0.0
- #       else:         
+ #       else:
             return 105.0*math.sqrt(1.0-x**2.0)*(4.0*x**2.0 -1.0)
     elif l==4 and m==4:
         return 420.0*x*(x**2.0 -1.0)
-        
+
 #Coordinate transformation Spherical (theta,phi,r)  to Cartesian (x,y,z)
 def toCartesian(x):
     v=datastructure.Point3D(0,0,0)
     v._x = x._z*math.sin(x._x)*math.cos(x._y)
     v._y = x._z*math.sin(x._x)*math.sin(x._y)
-    v._z = x._z*math.cos(x._x)        
+    v._z = x._z*math.cos(x._x)
     return v
 #Coordinate transformation Cartesian  to Spherical
 def toSpherical(x):
@@ -243,30 +243,30 @@ def toSpherical(x):
     #r
     v._z = x._length()
     return v
-    
-    
+
+
 def toSphericalVecfield(x,v):
-    """ Pos x has to be in spherical coordinates 
+    """ Pos x has to be in spherical coordinates
     """
     vf=datastructure.Point3D(0,0,0)
     vf._z= v._x*math.sin(x._x)*math.cos(x._y) + v._y*math.sin(x._x)*math.sin(x._y) + v._z*math.cos(x._x)
     vf._x = v._x*math.cos(x._x)*math.cos(x._y) + v._y*math.cos(x._x)*math.sin(x._y) - v._y*math.sin(x._x)
-    vf._y = -v._x*math.sin(x._y) + v._y*math.cos(x._y) 
+    vf._y = -v._x*math.sin(x._y) + v._y*math.cos(x._y)
     return vf
-    
+
 def toCartesianVecfield(x,v):
-    """ Pos x has to be in spherical coordinates 
+    """ Pos x has to be in spherical coordinates
     """
     vf=datastructure.Point3D(0,0,0)
     vf._x = v._z*math.sin(x._x)*math.cos(x._y) + v._x*math.cos(x._x)*math.cos(x._y)- v._y*math.sin(x._y)
     vf._y = v._z*math.sin(x._x)*math.sin(x._y) + v._x*math.cos(x._x)*math.sin(x._y)+ v._y*math.cos(x._y)
-    vf._z = v._z*math.cos(x._x) - v._x*math.sin(x._x)     
+    vf._z = v._z*math.cos(x._x) - v._x*math.sin(x._x)
     return vf
-    
+
 #Method for the parrallel SHA to check if the 2 evaluated points are in a certain range
 def rangeCheck(v1,v2):
     return True
-    
+
 def rk4(x, v, a, dt):
     """Returns final (position, magnetic field) tuple after
     time dt has passed.
@@ -317,12 +317,12 @@ def eulerForward(x,v,a,step=1):
     a: evaluation fucntion a(x,v,dt) (must be callable) should return a number like object (e.g. trilinear interpolation)
     step: initial timestep, only usefull, if it takes very long to find the first step (number)"""
     #error treshold for adaptive stepsize
-    err = 0.9961947384098608 
+    err = 0.9961947384098608
     x0 = datastructure.Point3D(x._x,x._y,x._z)
     v0 = datastructure.Point3D(v._x,v._y,v._z)
-    
+
     dt = step
-    
+
     x1=x0.add(v0.mult(dt))
     v1=a(x,v,dt)
     """Scaling the Vectorfield"""
@@ -330,10 +330,10 @@ def eulerForward(x,v,a,step=1):
     x2=x0.add(v0.mult(dt/2))
     counter =0
     print(x1,v1,x2)
-#    v2=a(x,v,dt/2) 
+#    v2=a(x,v,dt/2)
     #adaptive stepsize
-    
-    while ((datastructure.dot(x1,x2)/(x1._length() * x2._length())) < err) :  
+
+    while ((datastructure.dot(x1,x2)/(x1._length() * x2._length())) < err) :
         counter+=1
         dt/=2
         x1=x0.add(v1.mult(dt))
@@ -342,11 +342,11 @@ def eulerForward(x,v,a,step=1):
         v1 = v1.mult(1.0e-04)
         x2=x0.add(v1.mult(dt/2))
     return Point3D(x1._x,x1._y,x1._z),Point3D(v1._x,v1._y,v1._z),dt
-    
+
 def testSHA(x,y,z,mx,my,mz):
-    loadGaussCoef("D:\Uni\GeodynamicsProject\GausCoef.txt")
-    
-    """for theta in range(10,2*3141,100):
+    loadGaussCoef("../GausCoef.txt")
+
+    for theta in range(10,2*3141,100):
         for radius in range(135,292,30):
             tpr = datastructure.Point3D(theta/1000.0, math.pi, radius/100.0)
             xyz = toCartesian(tpr)
@@ -357,10 +357,10 @@ def testSHA(x,y,z,mx,my,mz):
             plotValue_y.append(v._z)
             vf = toSphericalVecfield(tpr,v)
             print(tpr,vf,v)
-            
+
     drawVectorField(plotPos_x,plotPos_y,plotValue_x,plotValue_y)
-    return"""
-    
+    return
+
     start = datastructure.Point3D(x,y,z)
     t=0.0001
     sl=[]
@@ -391,7 +391,7 @@ def testSHA(x,y,z,mx,my,mz):
         t+=t2
     drawStreamLine(plotPos_x,plotPos_y,plotPos_z)
 #    drawVectorField(plotPos_x,plotPos_y,plotValue_x,plotValue_y)
-        
+
 
 def loadGaussCoef(filename):
     with open(filename,'r') as file:
@@ -411,4 +411,12 @@ def loadGaussCoef(filename):
                     count +=1
                 else :
                     print("Error: Invalid File Format")
-            
+
+
+def main():
+    testSHA(1.0879, 0.0, -1.0879, 0,0,0)
+    plt.show()
+
+if __name__ == "__main__":
+    main()
+
