@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
 Created on Wed May 28 12:36:56 2014
@@ -18,10 +19,10 @@ def axis(length):
     glTranslated(0,0,length)
     glutWireCone(0.04,0.2, 12, 9)
     glPopMatrix()
-    
+
 def threeAxis(length):
-    """ Draws an X, Y and Z-axis """ 
-    
+    """ Draws an X, Y and Z-axis """
+
     glPushMatrix()
     # Z-axis
     glColor3f(1.0,0.0,0.0)
@@ -35,62 +36,62 @@ def threeAxis(length):
     glColor3f(0.0,0.0,1.0)
     axis(length)
     glPopMatrix()
-    
+
 def displayFun():
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
     glOrtho(-2.0*64/48.0,2.0*64/48.0,-1.5, 1.5, 0.1, 100)
-    
+
     glMatrixMode(GL_MODELVIEW)
     glLoadIdentity()
     gluLookAt(2.0, 2.0, 2.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
-    
+
     glClear(GL_COLOR_BUFFER_BIT)
     threeAxis(0.5)
-    
+
     glColor3f(0.0,0.0,0.0)
     glPushMatrix()
     glTranslated(0.5,0.5,0.5);
     glutWireCube(1.0)
-    glPopMatrix() 
-    
+    glPopMatrix()
+
     glPushMatrix()
     glTranslated(1.0,1.0,0)
     glutWireSphere(0.25,10,8)
     glPopMatrix()
-    
+
     glPushMatrix()
     glTranslated(1.0,1.0,0)
     glutWireSphere(0.25,10,8)
     glPopMatrix()
-    
+
     glPushMatrix()
     glTranslated(1.0,0,1.0)
     glutWireCone(0.2,0.5,10,8)
     glPopMatrix()
-    
+
     glPushMatrix()
     glTranslated(1.0,1.0,1.0)
     glutWireTeapot(0.2)
     glPopMatrix()
-    
+
     glPushMatrix()
     glTranslated(0,1,0)
     glRotated(90,1,0,0)
     glutWireTorus(0.1,0.3,10,10)
     glPopMatrix()
-    
+
     glPushMatrix()
     glTranslated(1,0,0)
     glScaled(0.15,0.15,0.15)
     glutWireDodecahedron()
     glPopMatrix()
-    
+
     glPushMatrix()
     glTranslated(0,1,1)
     glutWireCube(0.25)
     glPopMatrix()
-    
+
     glPushMatrix()
     glTranslated(0,0,1)
     qobj = gluNewQuadric()
