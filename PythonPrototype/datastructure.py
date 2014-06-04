@@ -41,7 +41,7 @@ def dot(a,b):
         b0 = Point3D(0,0,0)
         a0 = a
         b0 = b
-        return a0._x*b0._x + a0._y*b0._y + a0._z*b0._z
+        return a0._x * b0._x + a0._y * b0._y + a0._z * b0._z
 
 
 class Point3D:

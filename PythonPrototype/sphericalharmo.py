@@ -16,6 +16,7 @@ from numpy import *
 import math
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 #from mayavi import mlab
 
 
@@ -32,6 +33,7 @@ plotPos_y=[]
 plotValue_x=[]
 plotValue_y=[]
 plotValue_z=[]
+plotColor=[]
 
 #Gauss coefficients with max degree m
 n=4
@@ -44,10 +46,11 @@ ar= 2.91
 data = AvsUcdAscii()
 
 # x,y,z should be list of number type objects
-def drawStreamLine(x,y,z):
+def drawStreamLine(x,y,z,color):
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
-    ax.scatter(x, y, z, c='red')
+    for x0,y0,z0,c0 in [(x,y,z,color)]:
+        ax.scatter(x0, y0, z0, c=c0,cmap=mpl.cm.gray)
     ax.set_xlabel('X Label')
     ax.set_ylabel('Y Label')
     ax.set_zlabel('Z Label')
@@ -105,7 +108,7 @@ def sphericalHarmoAnalysis(x):
     #print("Pos Spherical: "+ str(v._x)+","+str(v._y)+","+str(v._z))
     result=Point3D(0,0,0)
 
-    for l in range(1,2):
+    for l in range(1,n):
         for m in range(l+1):
     #m = 1
     #l = 1
@@ -122,7 +125,7 @@ def sphericalHarmoAnalysis(x):
             #print(l,m,result)"""
 #    print("sha,spherical:",result)
     vf = toCartesianVecfield(v,result)
-    print("sha,cartesian:",vf)
+#    print("sha,cartesian:",vf)
     return vf
 
 #Schmidt-Normalized Legendrefunction
@@ -317,80 +320,96 @@ def eulerForward(x,v,a,step=1):
     a: evaluation fucntion a(x,v,dt) (must be callable) should return a number like object (e.g. trilinear interpolation)
     step: initial timestep, only usefull, if it takes very long to find the first step (number)"""
     #error treshold for adaptive stepsize
-    err = 0.9961947384098608
+    err = 0.99999999
     x0 = datastructure.Point3D(x._x,x._y,x._z)
     v0 = datastructure.Point3D(v._x,v._y,v._z)
 
     dt = step
 
     x1=x0.add(v0.mult(dt))
-    v1=a(x,v,dt)
-    """Scaling the Vectorfield"""
-    v1 = v1.mult(1.0e-04)
     x2=x0.add(v0.mult(dt/2))
-    counter =0
-    print(x1,v1,x2)
-#    v2=a(x,v,dt/2)
+    v1=a(x1,v0,dt)
+    v2=a(x2,v0,dt/2)
+#    print("x0,v0:" , x0,v0)
+#    print("x1,v1:",x1,v1)
+#    print("x2,v2:",x2,v2)
     #adaptive stepsize
 
-    while ((datastructure.dot(x1,x2)/(x1._length() * x2._length())) < err) :
-        counter+=1
+#    print("Angle between:",datastructure.dot(v1,v2)/(v1._length() * v2._length()))
+    """
+    while (datastructure.dot(v1,v2)/(v1._length() * v2._length())) < err :
         dt/=2
-        x1=x0.add(v1.mult(dt))
-        v1=a(x,v,dt)
-        """Scaling the Vectorfield"""
-        v1 = v1.mult(1.0e-04)
-        x2=x0.add(v1.mult(dt/2))
+        x1=x0.add(v0.mult(dt))
+        x2=x0.add(v0.mult(dt/2))
+        v1=a(x1,v0,dt)
+        v2=a(x2,v0,dt/2)
+        """
+        
+    print(x1,v1)
     return Point3D(x1._x,x1._y,x1._z),Point3D(v1._x,v1._y,v1._z),dt
-
+    
 def testSHA(x,y,z,mx,my,mz):
     loadGaussCoef("../GausCoef.txt")
 
-    for theta in range(10,2*3141,100):
-        for radius in range(135,292,30):
-            tpr = datastructure.Point3D(theta/1000.0, math.pi, radius/100.0)
+    for theta in range(10,2*3141,300):
+        for phi in range(10,3141,300):
+            tpr = datastructure.Point3D(theta/1000.0, phi/1000.0, 292/100.0)
             xyz = toCartesian(tpr)
             plotPos_x.append(xyz._x)
-            plotPos_y.append(xyz._z)
+            plotPos_y.append(xyz._y)
+            plotPos_z.append(xyz._z)
             v = evalSHA(xyz, None, None)
             plotValue_x.append(v._x)
-            plotValue_y.append(v._z)
+            plotValue_y.append(v._y)
+            plotValue_z.append(v._z)
             vf = toSphericalVecfield(tpr,v)
-            print(tpr,vf,v)
-
-    drawVectorField(plotPos_x,plotPos_y,plotValue_x,plotValue_y)
-    return
-
-    start = datastructure.Point3D(x,y,z)
-    t=0.0001
+            plotColor.append(1.0)
+          #  print(tpr,vf,v)
+            
+    #drawVectorField(plotPos_x,plotPos_y,plotValue_x,plotValue_y)
+    #drawStreamLine(plotPos_x,plotPos_y,plotPos_z,plotColor)        
+    #return
+    
     sl=[]
     vl=[]
-    tmax = 0.009
+    tmax = 6.63e-03
     #initial stepsize, optional
-    step = 0.0001
-    nextPos = start
-    plotPos_x.append(start._x)
-    plotPos_y.append(start._y)
-    plotPos_z.append(start._z)
-    nextVal = datastructure.Point3D(mx,my,mz)
-    while t < tmax:
-        print("t: " + str(t))
-#        xf,vf = rk4(nextPos,nextVal,evalSHA,t)
+    step = 5.0e-06
+    max_steps = 10000
+    t=step
+    tpr0 = datastructure.Point3D(0.75*math.pi, 0.5*math.pi, 292/100.0)
+    xyz0 = toCartesian(tpr0)
+    v0 = evalSHA(xyz0, None, None)
+    nextVal=v0
+    nextPos=xyz0
+    plotPos_x.append(xyz0._x)
+    plotPos_y.append(xyz0._y)
+    plotPos_z.append(xyz0._z)
+    print(xyz0,v0)
+    i= 0
+    while (max_steps>i) and (t<tmax):
+        print(((t-step)*100.0)/(tmax-step),"% finished ..... ")
         xf, vf ,t2= eulerForward(nextPos,nextVal,evalSHA,step)
-        print( xf)
+        #xfs=toSpherical(xf)
+        #vfs=toSphericalVecfield(xfs,vf)
         plotPos_x.append(xf._x)
         plotPos_y.append(xf._y)
         plotPos_z.append(xf._z)
         plotValue_x.append(vf._x)
         plotValue_y.append(vf._y)
         plotValue_z.append(vf._z)
+        plotColor.append(0.5)
         sl.append(xf)
         vl.append(vf)
         nextPos = xf
         nextVal = vf
         t+=t2
-    drawStreamLine(plotPos_x,plotPos_y,plotPos_z)
-#    drawVectorField(plotPos_x,plotPos_y,plotValue_x,plotValue_y)
+        print("step #",i)
+        i+=1
+    #vf = toSphericalVecfield(tpr,v)
+    #print(tpr,vf,v)  
+    drawStreamLine(plotPos_x,plotPos_y,plotPos_z,plotColor)
+    return
 
 
 def loadGaussCoef(filename):
