@@ -10,6 +10,7 @@ Algortithms for data extraction and Extrapolation
 """
 
 import datastructure
+from datastructure import dot
 from datastructure import Point3D
 from datastructure import AvsUcdAscii
 from numpy import *
@@ -17,6 +18,8 @@ import math
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 import matplotlib as mpl
+import OpenGLVisFunc as Vis
+import NeHeGL
 #from mayavi import mlab
 
 
@@ -89,10 +92,10 @@ def streamline(start,t_max,step):
         t+=step
     return sl
 
-def evalf(x,v,dt):
+def evalf(x,dt):
     return data.getValue(x)
 
-def evalSHA(x,v,dt):
+def evalSHA(x,dt):
     return sphericalHarmoAnalysis(x)
 
 def sphericalHarmoAnalysis(x):
@@ -269,48 +272,94 @@ def toCartesianVecfield(x,v):
 #Method for the parrallel SHA to check if the 2 evaluated points are in a certain range
 def rangeCheck(v1,v2):
     return True
+    
+def adaptStep(x1,v1,x2,v2,dt):
+    """
+    Input Position, Vector, time(refering to v(t) as a vectorfield), current "time" t, an initial stepsize dt 
+    Output boolean,adapted stepsize
+    Domain specific knowledge regarding the Vectorfield can be added here, to speed up the estimation of the stepsize
+    """
+    #Error respective to cos(angle) with angle between the two steps 
+    # 1%    = 0.9980267284282716
+    # 0.1 % = 0.9999802608561371
+    err =  0.9999802608561371
+    dtn = dt    
+    #decrease stepsize when error is too high 
+    if (datastructure.dot(v1,v2)/(v1._length()*v2._length() ) ) < err: 
+      #  print(datastructure.dot(v1,v2)/(v1._length()*v2._length() ),"error too high")
+        dtn/= 4.0
+        return True, dtn
+    #increase stepsize when error is very small
+        """    elif (datastructure.dot(v1,v2)/(v1._length()*v2._length() ) ) > (err + (1.0-err)*0.9):
+     #   print(datastructure.dot(v1,v2)/(v1._length()*v2._length() ),"error too low")
+        dtn*=100.0        
+        return True, dtn
+        """        
+    else :
+    #    print(datastructure.dot(v1,v2)/(v1._length()*v2._length() ) ,"error 0.1%")
+        return False, dtn
 
-def rk4(x, v, a, dt):
+def rk4(x, v, a, t, dt):
     """Returns final (position, magnetic field) tuple after
     time dt has passed.
 
     x: initial position (Point3D)
     v: initial magnetic field (Point3D)
-    a: evaluation fucntion a(x,v,dt) (must be callable) should return a number like object (e.g. trilinear interpolation)
+    a: evaluation fucntion a(x,t) (must be callable) should return a vector valued item (e.g. trilinear interpolation)
     dt: timestep (number)"""
-    x1 = datastructure.Point3D(x._x,x._y,x._z)
-    v1 = datastructure.Point3D(v._x,v._y,v._z)
-    a1 = a(x1, v1, 0)
+    x0 = datastructure.Point3D(x._x,x._y,x._z)
+    v0 = datastructure.Point3D(v._x,v._y,v._z)
+    t1= t + dt
+    
+    """k1 should be equal to v0 """
+    k1 = a(x0,t)
+    k2 = a(x0.add(k1.mult(dt/2.0)),t + dt/2.0)
+    k3 = a(x0.add(k2.mult(dt/2.0)),t + dt/2.0)
+    k4 = a(x0.add(k3.mult(dt)),t + dt)
+    
+    k1 = k1.mult(1.0/6.0 * dt)    
+    k2 = k2.mult(2.0/6.0 * dt)
+    k3 = k3.mult(2.0/6.0 * dt)
+    k4 = k4.mult(1.0/6.0 * dt)
+    
+    x1 = x0.add(k1)
+    x1 = x1.add(k2)
+    x1 = x1.add(k3)
+    x1 = x1.add(k4)
+    
+    v1 = a(x1,t1)
+    
+    ## steer the gaps inbetween here
+    dt2 = dt/4.0
+    
+    t2 = t+dt2
+    k1 = a(x0,t)
+    k2 = a(x0.add(k1.mult(dt2/2.0)),t + dt2/2.0)
+    k3 = a(x0.add(k2.mult(dt2/2.0)),t + dt2/2.0)
+    k4 = a(x0.add(k3.mult(dt2)),t + dt2)
+    
+    k1 = k1.mult(1.0/6.0 * dt2)    
+    k2 = k2.mult(2.0/6.0 * dt2)
+    k3 = k3.mult(2.0/6.0 * dt2)
+    k4 = k4.mult(1.0/6.0 * dt2)
+    
+    x2 = x0.add(k1)
+    x2 = x2.add(k2)
+    x2 = x2.add(k3)
+    x2 = x2.add(k4)
+    
+    v2 = a(x2,t2)
+    
+    #adapt stepsize
+    needAdapt = adaptStep(x1,v1,x2,v2,dt)[0]
+    while needAdapt:
+        needAdapt, dt = adaptStep(x1,v1,x2,v2,dt)
+        t1 = t+dt
+        x1,v1,t1,x2,v2,t2 = rk4(x0,v0,a,t1,dt)
+        
 
-    x2 = x.add(v1.mult(0.5*dt))
-    v2 = v.add(a1.mult(0.5*dt))
-    a2 = a(x2, v2, dt/2.0)
-
-    x3 = x.add(v2.mult(0.5*dt))
-    v3 = v.add(a2.mult(0.5*dt))
-    a3 = a(x3, v3, dt/2.0)
-
-    x4 = x.add(v3.mult(dt))
-    v4 = v.add(a3.mult(dt))
-    a4 = a(x4, v4, dt)
-
-    print(v1, v2, v3, v4)
-    print(a1, a2, a3, a4)
-    xf = x
-    xf=xf.add(v1.mult(dt/6))
-    xf=xf.add(v2.mult(dt/6*2))
-    xf=xf.add(v3.mult(dt/6*2))
-    xf=xf.add(v4)
-#    xf = x + (dt/6.0)*(v1 + 2*v2 + 2*v3 + v4)
-    vf = v.add(a1.mult(dt/6))
-    vf=vf.add(a2.mult(dt/6*2))
-    vf=vf.add(a3.mult(dt/6*2))
-    vf=vf.add(a4)
-#    vf = v + (dt/6.0)*(a1 + 2*a2 + 2*a3 + a4)
-
-    print("Pos: " + str(xf._x)+ ","+ str(xf._y)+ "," + str(xf._z))
-    print("Val: " + str(vf._x)+ ","+ str(vf._y)+ "," + str(vf._z))
-    return xf, vf
+   # print(x1,v1,t1)
+    return x1, v1, t1, x2, v2, t2
 
 def eulerForward(x,v,a,step=1):
     """Returns final (position, magnetic field,stepsize) triple after
@@ -328,22 +377,8 @@ def eulerForward(x,v,a,step=1):
 
     x1=x0.add(v0.mult(dt))
     x2=x0.add(v0.mult(dt/2))
-    v1=a(x1,v0,dt)
-    v2=a(x2,v0,dt/2)
-#    print("x0,v0:" , x0,v0)
-#    print("x1,v1:",x1,v1)
-#    print("x2,v2:",x2,v2)
-    #adaptive stepsize
-
-#    print("Angle between:",datastructure.dot(v1,v2)/(v1._length() * v2._length()))
-    """
-    while (datastructure.dot(v1,v2)/(v1._length() * v2._length())) < err :
-        dt/=2
-        x1=x0.add(v0.mult(dt))
-        x2=x0.add(v0.mult(dt/2))
-        v1=a(x1,v0,dt)
-        v2=a(x2,v0,dt/2)
-        """
+    v1=a(x1,dt)
+    v2=a(x2,dt/2)
         
     print(x1,v1)
     return Point3D(x1._x,x1._y,x1._z),Point3D(v1._x,v1._y,v1._z),dt
@@ -358,28 +393,24 @@ def testSHA(x,y,z,mx,my,mz):
             plotPos_x.append(xyz._x)
             plotPos_y.append(xyz._y)
             plotPos_z.append(xyz._z)
-            v = evalSHA(xyz, None, None)
+            v = evalSHA(xyz, None)
             plotValue_x.append(v._x)
             plotValue_y.append(v._y)
             plotValue_z.append(v._z)
             vf = toSphericalVecfield(tpr,v)
             plotColor.append(1.0)
           #  print(tpr,vf,v)
-            
-    #drawVectorField(plotPos_x,plotPos_y,plotValue_x,plotValue_y)
-    #drawStreamLine(plotPos_x,plotPos_y,plotPos_z,plotColor)        
-    #return
     
     sl=[]
     vl=[]
-    tmax = 6.63e-03
+    tmax = 6.0e-02
     #initial stepsize, optional
-    step = 5.0e-06
+    step = 5.0e-04
     max_steps = 10000
     t=step
-    tpr0 = datastructure.Point3D(0.75*math.pi, 0.5*math.pi, 292/100.0)
+    tpr0 = datastructure.Point3D(0.75*math.pi, 0.5*math.pi, 180/100.0)
     xyz0 = toCartesian(tpr0)
-    v0 = evalSHA(xyz0, None, None)
+    v0 = evalSHA(xyz0, None)
     nextVal=v0
     nextPos=xyz0
     plotPos_x.append(xyz0._x)
@@ -387,9 +418,12 @@ def testSHA(x,y,z,mx,my,mz):
     plotPos_z.append(xyz0._z)
     print(xyz0,v0)
     i= 0
+
+        
     while (max_steps>i) and (t<tmax):
         print(((t-step)*100.0)/(tmax-step),"% finished ..... ")
-        xf, vf ,t2= eulerForward(nextPos,nextVal,evalSHA,step)
+        xf, vf ,t2,xf2,vf2,tf2 = rk4(nextPos,nextVal,evalSHA,t,step)
+        print(xf,vf,t2)
         #xfs=toSpherical(xf)
         #vfs=toSphericalVecfield(xfs,vf)
         plotPos_x.append(xf._x)
@@ -403,12 +437,15 @@ def testSHA(x,y,z,mx,my,mz):
         vl.append(vf)
         nextPos = xf
         nextVal = vf
-        t+=t2
+        t=t2
         print("step #",i)
-        i+=1
+        i+=1     
+    
     #vf = toSphericalVecfield(tpr,v)
-    #print(tpr,vf,v)  
-    drawStreamLine(plotPos_x,plotPos_y,plotPos_z,plotColor)
+    #print(tpr,vf,v)
+    Vis.setStreamLine(sl,vl)
+    NeHeGL.main()
+    #drawStreamLine(plotPos_x,plotPos_y,plotPos_z,plotColor)
     return
 
 
@@ -434,7 +471,7 @@ def loadGaussCoef(filename):
 
 def main():
     testSHA(1.0879, 0.0, -1.0879, 0,0,0)
-    plt.show()
+    #plt.show()
 
 if __name__ == "__main__":
     main()
