@@ -10,26 +10,19 @@ Algortithms for data extraction and Extrapolation
 """
 
 import datastructure
-from datastructure import dot
+#from datastructure import dot
 from datastructure import Point3D
 from datastructure import AvsUcdAscii
 from numpy import *
 import math
-from mpl_toolkits.mplot3d import Axes3D
+#from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import OpenGLVisFunc as Vis
 import NeHeGL
-#from mayavi import mlab
 
-
-
-# List which contains the streamline datapoints of the forward/backward rungeKutta
-fw_points=[]
-bw_points=[]
 
 #List which contains the evaluated datapoints from the SHA
-sha_points=[]
 plotPos_x=[]
 plotPos_z=[]
 plotPos_y=[]
@@ -40,11 +33,16 @@ plotColor=[]
 
 #Gauss coefficients with max degree m
 n=4
-g=ndarray((6,6))
-h=ndarray((6,6))
+gIGRF=ndarray((6,6))
+hIGRF=ndarray((6,6))
+gRE=ndarray((6,6))
+hRE=ndarray((6,6))
+gICB=ndarray((6,6))
+hICB=ndarray((6,6))
 #earth radius
-#a = 6371000
 ar= 2.91
+#inner core boundary radius
+icb = 5.380000000000000E-001
 # data Object
 data = AvsUcdAscii()
 
@@ -98,6 +96,16 @@ def evalf(x,dt):
 def evalSHA(x,dt):
     return sphericalHarmoAnalysis(x)
 
+def getGaussCoef(radius):
+    if (radius>ar*0.9):
+        return gIGRF,hIGRF
+    elif (radius<=ar*0.9) and (radius>icb*1.1):
+        return gRE,hRE
+    elif (radius<=icb*1.1):
+        return gICB,hICB
+    else:
+        print("Error in radius")
+
 def sphericalHarmoAnalysis(x):
     """Evaluates the spherical harmonics equation for the magnetic field, with degree n
     @Input: Point3D Position
@@ -111,6 +119,9 @@ def sphericalHarmoAnalysis(x):
     #print("Pos Spherical: "+ str(v._x)+","+str(v._y)+","+str(v._z))
     result=Point3D(0,0,0)
 
+    """Get Gaus Coef respective to radius"""  
+    g,h = getGaussCoef(v._z)
+    
     for l in range(1,n):
         for m in range(l+1):
     #m = 1
@@ -384,9 +395,10 @@ def eulerForward(x,v,a,step=1):
     return Point3D(x1._x,x1._y,x1._z),Point3D(v1._x,v1._y,v1._z),dt
     
 def testSHA(x,y,z,mx,my,mz):
-    loadGaussCoef("../GausCoef.txt")
+    loadGaussCoefIGRF("../GausCoef.txt")
+    loadGaussCoefSimu("../Gauss_RE.dat","../Gauss_ICB.dat")
 
-    for theta in range(10,2*3141,300):
+    """for theta in range(10,2*3141,300):
         for phi in range(10,3141,300):
             tpr = datastructure.Point3D(theta/1000.0, phi/1000.0, 292/100.0)
             xyz = toCartesian(tpr)
@@ -399,14 +411,14 @@ def testSHA(x,y,z,mx,my,mz):
             plotValue_z.append(v._z)
             vf = toSphericalVecfield(tpr,v)
             plotColor.append(1.0)
-          #  print(tpr,vf,v)
+          #  print(tpr,vf,v)"""
     
     sl=[]
     vl=[]
-    tmax = 6.0e-02
+    tmax = 50.0
     #initial stepsize, optional
     step = 5.0e-04
-    max_steps = 10000
+    max_steps = 5000
     t=step
     tpr0 = datastructure.Point3D(0.75*math.pi, 0.5*math.pi, 180/100.0)
     xyz0 = toCartesian(tpr0)
@@ -449,7 +461,7 @@ def testSHA(x,y,z,mx,my,mz):
     return
 
 
-def loadGaussCoef(filename):
+def loadGaussCoefIGRF(filename):
     with open(filename,'r') as file:
         count = 0
         for line in file:
@@ -460,14 +472,75 @@ def loadGaussCoef(filename):
             else:
                 entries = line.split()
                 if entries[0] is 'g':
-                    g[int(entries[1])][int(entries[2])] =float(entries[3])
+                    gIGRF[int(entries[1])][int(entries[2])] =float(entries[3])
                     count +=1
                 elif entries[0] is 'h':
-                    h[int(entries[1])][int(entries[2])] =float(entries[3])
+                    hIGRF[int(entries[1])][int(entries[2])] =float(entries[3])
                     count +=1
                 else :
                     print("Error: Invalid File Format")
 
+def loadGaussCoefSimu(filenameRE,filenameICB):
+    with open(filenameRE,'r') as file:
+        count = 0
+        for line in file :
+            ##skip as many lines, as needed to get to you disered timestep
+            if(count<3):
+                ##skip first 3 lines
+                doNothing=0
+                count +=1
+            ## point to the line with the disered timestep    
+            elif (count==3):
+                entries = line.split()
+                ##we only use Coefs until the degree of 5
+                n = 0
+                row = 2                
+                for k in range(0,6):                    
+                    for i in range (0,n+1):
+                        print("g",n,i,entries[row])
+                        gRE[n][i]=entries[row]
+                        row +=1                        
+                    n +=1
+                    if(k<5):
+                        for q in range(n,0,-1):
+                            print("h",n,q,entries[row])
+                            hRE[n][q]=entries[row]
+                            row +=1
+                count +=1
+            else:
+                print("GausCoeffs for Mantel Area read")
+                break
+                
+    with open(filenameICB,'r') as file:
+        count = 0
+        for line in file :
+            ##skip as many lines, as needed to get to you disered timestep
+            if(count<3):
+                ##skip first 3 lines
+                doNothing=0
+                count +=1
+            ## point to the line with the disered timestep    
+            elif (count==3):
+                entries = line.split()
+                ##we only use Coefs until the degree of 5
+                n = 0
+                row = 2
+                for k in range(1,6):
+                    for i in range (0,n+1):
+                        print("g",n,i,entries[row])
+                        gICB[n][i]=entries[row]
+                        row +=1
+                    n +=1
+                    if(k<5):
+                        for q in range(n,0,-1):
+                            print("h",n,q,entries[row])
+                            hICB[n][q]=entries[row]
+                            row +=1
+                count +=1
+            else:
+                print("GausCoeffs for ICB Area read")
+                break
+                
 
 def main():
     testSHA(1.0879, 0.0, -1.0879, 0,0,0)
