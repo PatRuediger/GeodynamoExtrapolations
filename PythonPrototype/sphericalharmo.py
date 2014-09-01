@@ -97,11 +97,16 @@ def evalSHA(x,dt):
     return sphericalHarmoAnalysis(x)
 
 def getGaussCoef(radius):
-    if (radius>ar*0.9):
+    
+    """IGRF only for testing pruposes"""
+    if (radius>ar):
+      #  print("IGRF used")
         return gIGRF,hIGRF
-    elif (radius<=ar*0.9) and (radius>icb*1.1):
+    elif (radius<=ar and (radius >(ar-icb)*0.8)):
+     #   print("RE used")
         return gRE,hRE
-    elif (radius<=icb*1.1):
+    elif (radius <=(ar-icb)*0.8):
+     #   print("ICB used")
         return gICB,hICB
     else:
         print("Error in radius")
@@ -144,10 +149,14 @@ def sphericalHarmoAnalysis(x):
 
 #Schmidt-Normalized Legendrefunction
 def SN(m,l,x):
-    #print("compute Schmidt- Normalized Legendre " + str(l)+" , " + str(m))
+    #print("compute Schmidt- Normalized Legendre " + str(l)+" , " + str(m)
+    if(math.isnan(Legendre(m,l,x))): print("NaN error")
+    if(Legendre(m,l,x)==0): print("is Zero error")
     return ((-1)**m)*math.sqrt(2.0*math.factorial(l-m)/math.factorial(l+m))*Legendre(m,l,x)
 def deltaSN(m,l,x):
     #print("compute derivative Schmidt- Normalized Legendre " + str(l)+" , " + str(m))
+    if(math.isnan(deltaLegendre(m,l,x))): print("NaN error")
+    if(deltaLegendre(m,l,x)==0): print("is Zero error")
     return ((-1)**m)*math.sqrt(2.0*math.factorial(l-m)/math.factorial(l+m))*deltaLegendre(m,l,x)
 
 
@@ -297,7 +306,7 @@ def adaptStep(x1,v1,x2,v2,dt):
     dtn = dt    
     #decrease stepsize when error is too high 
     if (datastructure.dot(v1,v2)/(v1._length()*v2._length() ) ) < err: 
-      #  print(datastructure.dot(v1,v2)/(v1._length()*v2._length() ),"error too high")
+        #print(datastructure.dot(v1,v2)/(v1._length()*v2._length() ),"error too high")
         dtn/= 4.0
         return True, dtn
     #increase stepsize when error is very small
@@ -396,7 +405,7 @@ def eulerForward(x,v,a,step=1):
     
 def testSHA(x,y,z,mx,my,mz):
     loadGaussCoefIGRF("../GausCoef.txt")
-    loadGaussCoefSimu("../Gauss_RE.dat","../Gauss_ICB.dat")
+    loadGaussCoefSimu("../../Gauss_RE.dat","../../Gauss_ICB.dat")
 
     """for theta in range(10,2*3141,300):
         for phi in range(10,3141,300):
@@ -415,12 +424,12 @@ def testSHA(x,y,z,mx,my,mz):
     
     sl=[]
     vl=[]
-    tmax = 50.0
+    tmax = 1000.0
     #initial stepsize, optional
-    step = 5.0e-04
-    max_steps = 5000
+    step = 0.8e-2
+    max_steps = 4000
     t=step
-    tpr0 = datastructure.Point3D(0.75*math.pi, 0.5*math.pi, 180/100.0)
+    tpr0 = datastructure.Point3D(0.75*math.pi, 0.5*math.pi,2.9)
     xyz0 = toCartesian(tpr0)
     v0 = evalSHA(xyz0, None)
     nextVal=v0
@@ -433,9 +442,14 @@ def testSHA(x,y,z,mx,my,mz):
 
         
     while (max_steps>i) and (t<tmax):
-        print(((t-step)*100.0)/(tmax-step),"% finished ..... ")
+       # print(((t-step)*100.0)/(tmax-step),"% finished ..... ")
+        if(toSpherical(nextPos)._z<icb):
+            print(toSpherical(nextPos))
+            print("Inner Core reached")
+            break
+       # print(toSpherical(nextPos));
         xf, vf ,t2,xf2,vf2,tf2 = rk4(nextPos,nextVal,evalSHA,t,step)
-        print(xf,vf,t2)
+      #  print(xf,vf,t2)
         #xfs=toSpherical(xf)
         #vfs=toSphericalVecfield(xfs,vf)
         plotPos_x.append(xf._x)
@@ -460,6 +474,37 @@ def testSHA(x,y,z,mx,my,mz):
     #drawStreamLine(plotPos_x,plotPos_y,plotPos_z,plotColor)
     return
 
+def testSHAwithVecfield():
+    loadGaussCoefIGRF("../GausCoef.txt")
+    loadGaussCoefSimu("../../Gauss_RE.dat","../../Gauss_ICB.dat")
+    
+    """define Vectorfield Positions in spherical coordinates"""
+    xf = []
+    for theta in range(10,2*3141,315):
+        for phi in range(10,3141,158):
+            tpr = datastructure.Point3D(theta/1000.0, phi/1000.0, 2.0)
+            xyz = toCartesian(tpr)
+            xf.append(xyz)
+          #print(tpr._x, tpr._y, tpr._z)
+          
+    #calculate VF Values
+    vf = []
+    for x in xf:
+        v = evalSHA(x,1.0)
+        print("Pos:",x,"Value:",v)
+        vf.append(v)
+ #   vf = []    
+   # tpr=datastructure.Point3D(3.141,0.1,2.92)
+   # xyz= toCartesian(tpr)
+   # xf.append(xyz)
+  #  vf.append(evalSHA(tpr,1.0))
+ #   print(xf)
+  #  print(vf)
+  #  value_n = datastructure.Point3D((vf[0]._x/vf[0]._length),(vf[0]._y/vf[0]._length),(vf[0]._z/vf[0]._length))
+  #  print(vf[0]._x/vf[0]._length())
+    Vis.setVectorfield(xf,vf)
+    NeHeGL.main()
+    return
 
 def loadGaussCoefIGRF(filename):
     with open(filename,'r') as file:
@@ -493,22 +538,22 @@ def loadGaussCoefSimu(filenameRE,filenameICB):
             elif (count==3):
                 entries = line.split()
                 ##we only use Coefs until the degree of 5
-                n = 0
+                m = 0
                 row = 2                
                 for k in range(0,6):                    
-                    for i in range (0,n+1):
-                        print("g",n,i,entries[row])
-                        gRE[n][i]=entries[row]
+                    for i in range (0,m+1):
+                        #print("g",n,i,entries[row])
+                        gRE[m][i]=entries[row]
                         row +=1                        
-                    n +=1
+                    m +=1
                     if(k<5):
-                        for q in range(n,0,-1):
-                            print("h",n,q,entries[row])
-                            hRE[n][q]=entries[row]
+                        for q in range(m,0,-1):
+                            #print("h",n,q,entries[row])
+                            hRE[m][q]=entries[row]
                             row +=1
                 count +=1
             else:
-                print("GausCoeffs for Mantel Area read")
+                #print("GausCoeffs for Mantel Area read")
                 break
                 
     with open(filenameICB,'r') as file:
@@ -523,27 +568,29 @@ def loadGaussCoefSimu(filenameRE,filenameICB):
             elif (count==3):
                 entries = line.split()
                 ##we only use Coefs until the degree of 5
-                n = 0
+                m = 0
                 row = 2
                 for k in range(1,6):
-                    for i in range (0,n+1):
-                        print("g",n,i,entries[row])
-                        gICB[n][i]=entries[row]
+                    for i in range (0,m+1):
+                        #print("g",n,i,entries[row])
+                        gICB[m][i]=entries[row]
                         row +=1
-                    n +=1
+                    m +=1
                     if(k<5):
-                        for q in range(n,0,-1):
-                            print("h",n,q,entries[row])
-                            hICB[n][q]=entries[row]
+                        for q in range(m,0,-1):
+                            #print("h",n,q,entries[row])
+                            hICB[m][q]=entries[row]
                             row +=1
                 count +=1
             else:
-                print("GausCoeffs for ICB Area read")
+                #print("GausCoeffs for ICB Area read")
                 break
                 
 
 def main():
-    testSHA(1.0879, 0.0, -1.0879, 0,0,0)
+    """only dummy values here """
+    #testSHA(1.0879, 0.0, -1.0879, 0,0,0)
+    testSHAwithVecfield()
     #plt.show()
 
 if __name__ == "__main__":

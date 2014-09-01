@@ -1,4 +1,5 @@
 
+from datastructure import Point3D
 from OpenGL.GL import *
 from OpenGL.GLUT import *
 from OpenGL.GLU import *
@@ -22,12 +23,15 @@ g_Transform = Matrix4fT ()
 g_LastRot = Matrix3fT ()
 g_ThisRot = Matrix3fT ()
 
-g_ArcBall = ArcBallT (640, 480)
+g_ArcBall = ArcBallT (800, 600)
 g_isDragging = False
 g_quadratic = None
 
 g_streamLinePos = []
 g_streamLineValue = []
+
+g_vecFieldPos = []
+g_vecFieldValue = []
 
 
 # A general OpenGL initialization function.  Sets all of the initial parameters. 
@@ -127,6 +131,21 @@ def Torus(MinorRadius, MajorRadius):
 def Sphere(center,radius):
     return
 
+def arrowGlyph(pos,value,scale):
+    #Normalize the vector
+    value_n = Point3D(value._x/value._length(),value._y/value._length(),value._z/value._length())
+    glPointSize( 5.0 );
+    glBegin(GL_POINTS);
+    glVertex3f(pos._x,pos._y,pos._z);
+    glEnd();
+    
+    glLineWidth(1.0);
+    glBegin(GL_LINES);
+    glVertex3f(pos._x,pos._y,pos._z);
+    glVertex3f(pos._x+value_n._x*scale,pos._y+value_n._y*scale,pos._z+value_n._z*scale);
+    glEnd();
+    return
+
 def streamLine(pos,value):
     #// Pos,value are Point3D
     glLineWidth(2.0);
@@ -137,6 +156,11 @@ def streamLine(pos,value):
         glEnd();
     return
 
+def drawVectorfield(xf,vf,scale=5):
+    """input are two arrays of Point3D and a scaling factor"""
+    for i in range(len(xf)-1):
+        arrowGlyph(xf[i],vf[i],scale)
+    return
 
 def setStreamLine(x,v):
     global g_streamLinePos
@@ -145,13 +169,21 @@ def setStreamLine(x,v):
     g_streamLineValue = v
     return
 
+def setVectorfield(xf,vf):
+    global g_vecFieldPos
+    g_vecFieldPos = xf
+    global g_vecFieldValue
+    g_vecFieldValue = vf
+    return
+
 def Draw ():
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);				# // Clear Screen And Depth Buffer
     glLoadIdentity();												# // Reset The Current Modelview Matrix
     glTranslatef(0.0,0.0,-15.0);									
     glPushMatrix();													# // NEW: Prepare Dynamic Transform
     glMultMatrixf(g_Transform);										# // NEW: Apply Dynamic Transform
-    glColor3f(0.75,0.75,1.0);
+    glColor3f(0.8,0.75,1.0);
+    drawVectorfield(g_vecFieldPos,g_vecFieldValue,0.5)
     streamLine(g_streamLinePos,g_streamLineValue)
     glPopMatrix();													# // NEW: Unapply Dynamic Transform
     
@@ -161,7 +193,13 @@ def Draw ():
     glMultMatrixf(g_Transform);										# // NEW: Apply Dynamic Transform
     glColor3f(1.0,0.75,0.75);
     glPolygonMode(GL_FRONT_AND_BACK,GL_LINE)
+    #Define Sphere here!!
+    glLineWidth(1.0)
     gluSphere(g_quadratic,2.92,20,20);
+    glColor3f(1.0,0.5,0.75);
+    glPolygonMode(GL_FRONT_AND_BACK,GL_FILL)
+    #Define Sphere here!!
+    gluSphere(g_quadratic,0.53,20,20);
     glPopMatrix();													# // NEW: Unapply Dynamic Transform
     glFlush ();														# // Flush The GL Rendering Pipeline
     glutSwapBuffers()
