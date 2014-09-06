@@ -46,49 +46,7 @@ icb = 5.380000000000000E-001
 # data Object
 data = AvsUcdAscii()
 
-# x,y,z should be list of number type objects
-def drawStreamLine(x,y,z,color):
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-    for x0,y0,z0,c0 in [(x,y,z,color)]:
-        ax.scatter(x0, y0, z0, c=c0,cmap=mpl.cm.gray)
-    ax.set_xlabel('X Label')
-    ax.set_ylabel('Y Label')
-    ax.set_zlabel('Z Label')
 
-
-
-def drawVectorField(x,y,vx,vy):
-    fig = plt.figure()
-    ax= fig.add_subplot(111)
-    ax.scatter(x,y)
-    ax.quiver(x,y,vx,vy)
-
-#computes a whole streamline
-def streamline(start,t_max,step):
-    """
-    @Input:start postion (Point3D), max number of timesteps (Integer), stepsize (float)
-    @Output:Returns a list of tuples, evaluated points from the rk4 method which can be plottet afterwards
-    Last item in the list can be uses as SHA input
-    """
-    t=0
-    sl=[]
-    vl=[]
-    nextPos = start
-    nextVal = data.getValue(nextPos)
-    while t < t_max:
-        if data.getValue(start) is None:
-            print("Leaving data domain ....... start Extrapolation")
-            sl.append(rk4(nextPos,nextVal,evalSHA,t)[0])
-            vl.append(rk4(nextPos,nextVal,evalSHA,t)[1])
-        else:
-            ## Inside data domain
-            sl.append(rk4(nextPos,nextVal,evalf,t)[0])
-            vl.append(rk4(nextPos,nextVal,evalf,t)[1])
-        nextPos = sl[len(sl)-1]
-        nextVal = vl[len(vl)-1]
-        t+=step
-    return sl
 
 def evalf(x,dt):
     return data.getValue(x)
@@ -96,6 +54,13 @@ def evalf(x,dt):
 def evalSHA(x,dt):
     return sphericalHarmoAnalysis(x)
 
+def useIGRFonly():
+    gRE = gIGRF
+    gICB = gIGRF
+    hRE = hIGRF
+    hICB = hIGRF
+    return
+    
 def getGaussCoef(radius):
     
     """IGRF only for testing pruposes"""
@@ -289,9 +254,7 @@ def toCartesianVecfield(x,v):
     vf._z = v._z*math.cos(x._x) - v._x*math.sin(x._x)
     return vf
 
-#Method for the parrallel SHA to check if the 2 evaluated points are in a certain range
-def rangeCheck(v1,v2):
-    return True
+
     
 def adaptStep(x1,v1,x2,v2,dt):
     """
@@ -371,11 +334,11 @@ def rk4(x, v, a, t, dt):
     v2 = a(x2,t2)
     
     #adapt stepsize
-    needAdapt = adaptStep(x1,v1,x2,v2,dt)[0]
-    while needAdapt:
-        needAdapt, dt = adaptStep(x1,v1,x2,v2,dt)
-        t1 = t+dt
-        x1,v1,t1,x2,v2,t2 = rk4(x0,v0,a,t1,dt)
+    #needAdapt = adaptStep(x1,v1,x2,v2,dt)[0]
+    #while needAdapt:
+        #needAdapt, dt = adaptStep(x1,v1,x2,v2,dt)
+        #t1 = t+dt
+        #x1,v1,t1,x2,v2,t2 = rk4(x0,v0,a,t1,dt)
         
 
    # print(x1,v1,t1)
@@ -403,108 +366,6 @@ def eulerForward(x,v,a,step=1):
     print(x1,v1)
     return Point3D(x1._x,x1._y,x1._z),Point3D(v1._x,v1._y,v1._z),dt
     
-def testSHA(x,y,z,mx,my,mz):
-    loadGaussCoefIGRF("../GausCoef.txt")
-    loadGaussCoefSimu("../../Gauss_RE.dat","../../Gauss_ICB.dat")
-
-    """for theta in range(10,2*3141,300):
-        for phi in range(10,3141,300):
-            tpr = datastructure.Point3D(theta/1000.0, phi/1000.0, 292/100.0)
-            xyz = toCartesian(tpr)
-            plotPos_x.append(xyz._x)
-            plotPos_y.append(xyz._y)
-            plotPos_z.append(xyz._z)
-            v = evalSHA(xyz, None)
-            plotValue_x.append(v._x)
-            plotValue_y.append(v._y)
-            plotValue_z.append(v._z)
-            vf = toSphericalVecfield(tpr,v)
-            plotColor.append(1.0)
-          #  print(tpr,vf,v)"""
-    
-    sl=[]
-    vl=[]
-    tmax = 1000.0
-    #initial stepsize, optional
-    step = 0.8e-2
-    max_steps = 4000
-    t=step
-    tpr0 = datastructure.Point3D(0.75*math.pi, 0.5*math.pi,2.9)
-    xyz0 = toCartesian(tpr0)
-    v0 = evalSHA(xyz0, None)
-    nextVal=v0
-    nextPos=xyz0
-    plotPos_x.append(xyz0._x)
-    plotPos_y.append(xyz0._y)
-    plotPos_z.append(xyz0._z)
-    print(xyz0,v0)
-    i= 0
-
-        
-    while (max_steps>i) and (t<tmax):
-       # print(((t-step)*100.0)/(tmax-step),"% finished ..... ")
-        if(toSpherical(nextPos)._z<icb):
-            print(toSpherical(nextPos))
-            print("Inner Core reached")
-            break
-       # print(toSpherical(nextPos));
-        xf, vf ,t2,xf2,vf2,tf2 = rk4(nextPos,nextVal,evalSHA,t,step)
-      #  print(xf,vf,t2)
-        #xfs=toSpherical(xf)
-        #vfs=toSphericalVecfield(xfs,vf)
-        plotPos_x.append(xf._x)
-        plotPos_y.append(xf._y)
-        plotPos_z.append(xf._z)
-        plotValue_x.append(vf._x)
-        plotValue_y.append(vf._y)
-        plotValue_z.append(vf._z)
-        plotColor.append(0.5)
-        sl.append(xf)
-        vl.append(vf)
-        nextPos = xf
-        nextVal = vf
-        t=t2
-        print("step #",i)
-        i+=1     
-    
-    #vf = toSphericalVecfield(tpr,v)
-    #print(tpr,vf,v)
-    Vis.setStreamLine(sl,vl)
-    NeHeGL.main()
-    #drawStreamLine(plotPos_x,plotPos_y,plotPos_z,plotColor)
-    return
-
-def testSHAwithVecfield():
-    loadGaussCoefIGRF("../GausCoef.txt")
-    loadGaussCoefSimu("../../Gauss_RE.dat","../../Gauss_ICB.dat")
-    
-    """define Vectorfield Positions in spherical coordinates"""
-    xf = []
-    for theta in range(10,2*3141,315):
-        for phi in range(10,3141,158):
-            tpr = datastructure.Point3D(theta/1000.0, phi/1000.0, 2.0)
-            xyz = toCartesian(tpr)
-            xf.append(xyz)
-          #print(tpr._x, tpr._y, tpr._z)
-          
-    #calculate VF Values
-    vf = []
-    for x in xf:
-        v = evalSHA(x,1.0)
-        print("Pos:",x,"Value:",v)
-        vf.append(v)
- #   vf = []    
-   # tpr=datastructure.Point3D(3.141,0.1,2.92)
-   # xyz= toCartesian(tpr)
-   # xf.append(xyz)
-  #  vf.append(evalSHA(tpr,1.0))
- #   print(xf)
-  #  print(vf)
-  #  value_n = datastructure.Point3D((vf[0]._x/vf[0]._length),(vf[0]._y/vf[0]._length),(vf[0]._z/vf[0]._length))
-  #  print(vf[0]._x/vf[0]._length())
-    Vis.setVectorfield(xf,vf)
-    NeHeGL.main()
-    return
 
 def loadGaussCoefIGRF(filename):
     with open(filename,'r') as file:
@@ -585,12 +446,12 @@ def loadGaussCoefSimu(filenameRE,filenameICB):
             else:
                 #print("GausCoeffs for ICB Area read")
                 break
-                
+    return gRE,hRE,gICB,hICB                
 
 def main():
     """only dummy values here """
     #testSHA(1.0879, 0.0, -1.0879, 0,0,0)
-    testSHAwithVecfield()
+    #testSHAwithVecfield()
     #plt.show()
 
 if __name__ == "__main__":

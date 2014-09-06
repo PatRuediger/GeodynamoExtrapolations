@@ -10,6 +10,7 @@
 from OpenGL.GL import *
 from OpenGL.GLUT import *
 from OpenGL.GLU import *
+from OpenGL.GLUT.freeglut import*
 import sys
 
 from OpenGLVisFunc import *		# Draw (), Initialize () and all the real OpenGL work.
@@ -31,8 +32,9 @@ ESCAPE = '\033'
 
 # Number of the glut window.
 window = 0
-
-
+g_zoomfactor = 45.0
+g_Width = 640
+g_Height = 480
 
 
 
@@ -64,13 +66,26 @@ def ReSizeGLScene(Width, Height):
 	# // field of view, aspect ratio, near and far
 	# This will squash and stretch our objects as the window is resized.
 	# Note that the near clip plane is 1 (hither) and the far plane is 1000 (yon)
-	gluPerspective(45.0, float(Width)/float(Height), 1, 100.0)
-
+    	global g_Height
+   	global g_Width
+   	global g_zoomfactor
+ 	g_Width = Width
+   	g_Height = Height
+	gluPerspective(g_zoomfactor, float(g_Width)/float(g_Height), 1, 100.0)
+         
 	glMatrixMode (GL_MODELVIEW);		# // Select The Modelview Matrix
 	glLoadIdentity ();					# // Reset The Modelview Matrix
-	g_ArcBall.setBounds (Width, Height)	# //*NEW* Update mouse bounds for arcball
+	g_ArcBall.setBounds (Width, Height)	# //*NEW* Update mouse bounds for arcbal
 	return
 
+def mouseWheel(button,  direction ,  x,  y):
+    global g_zoomfactor
+    if (direction > 0): #zoom in
+        g_zoomfactor= g_zoomfactor-10.0
+    elif (direction < 0):   #zoom out
+        g_zoomfactor=g_zoomfactor+10.0
+    ReSizeGLScene(g_Width,g_Height)
+    return
 
 # The function called whenever a key is pressed. Note the use of Python tuples to pass in: (key, x, y)  
 def keyPressed(*args):
@@ -87,7 +102,7 @@ def main():
 	global window
 	# pass arguments to init
 	glutInit(sys.argv)
-
+      
 	# Select type of Display mode:   
 	#  Double buffer 
 	#  RGBA color
@@ -126,11 +141,12 @@ def main():
 
 	# GLUT When mouse buttons are clicked in window
 	glutMouseFunc (Upon_Click)
+      # GLUT When wheel used
+	glutMouseWheelFunc (mouseWheel)
 
 	# GLUT When the mouse mvoes
 	glutMotionFunc (Upon_Drag)
-
-
+ 
 	# We've told Glut the type of window we want, and we've told glut about
 	# various functions that we want invoked (idle, resizing, keyboard events).
 	# Glut has done the hard work of building up thw windows DC context and 

@@ -23,7 +23,7 @@ g_Transform = Matrix4fT ()
 g_LastRot = Matrix3fT ()
 g_ThisRot = Matrix3fT ()
 
-g_ArcBall = ArcBallT (800, 600)
+g_ArcBall = ArcBallT (1024,768)
 g_isDragging = False
 g_quadratic = None
 
