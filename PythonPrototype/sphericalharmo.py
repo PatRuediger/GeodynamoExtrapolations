@@ -264,22 +264,23 @@ def adaptStep(x1,v1,x2,v2,dt):
     """
     #Error respective to cos(angle) with angle between the two steps 
     # 1%    = 0.9980267284282716
-    # 0.1 % = 0.9999802608561371
-    err =  0.9999802608561371
+    # 0.1 % = 0.999980261
+    err_up =  0.999    
+    err_down = 0.99999
     dtn = dt    
     #decrease stepsize when error is too high 
-    if (datastructure.dot(v1,v2)/(v1._length()*v2._length() ) ) < err: 
+    if (datastructure.dot(v1,v2)/(v1._length()*v2._length() ) ) < err_up: 
         #print(datastructure.dot(v1,v2)/(v1._length()*v2._length() ),"error too high")
-        dtn/= 4.0
+        dtn/= 10.0
+        #print("stepsize decreased",dtn)
         return True, dtn
     #increase stepsize when error is very small
-        """    elif (datastructure.dot(v1,v2)/(v1._length()*v2._length() ) ) > (err + (1.0-err)*0.9):
+    elif (datastructure.dot(v1,v2)/(v1._length()*v2._length() ) ) > err_down:
      #   print(datastructure.dot(v1,v2)/(v1._length()*v2._length() ),"error too low")
-        dtn*=100.0        
+        dtn*=10.0
+        #print("stepsize increased",dtn)        
         return True, dtn
-        """        
-    else :
-    #    print(datastructure.dot(v1,v2)/(v1._length()*v2._length() ) ,"error 0.1%")
+    else:
         return False, dtn
 
 def rk4(x, v, a, t, dt):

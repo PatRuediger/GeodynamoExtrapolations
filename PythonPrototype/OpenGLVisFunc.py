@@ -33,6 +33,8 @@ g_streamLineValue = []
 g_vecFieldPos = []
 g_vecFieldValue = []
 
+g_streamLineList = []
+
 
 # A general OpenGL initialization function.  Sets all of the initial parameters. 
 def Initialize (Width, Height):				# We call this right after our OpenGL window is created.
@@ -169,6 +171,24 @@ def setStreamLine(x,v):
     g_streamLineValue = v
     return
 
+"""adding a whole streamline as a tupple of positions and values"""
+def addStreamLine(xf,vf):
+    sl = (xf,vf)
+    global g_streamLineList
+    g_streamLineList.append(sl)
+    return
+
+def drawStreamLines():
+    glLineWidth(1.0)
+    global g_streamLineList
+    for sl in g_streamLineList:
+        for i in range(len(sl[0])-1):
+            glBegin( GL_LINES );
+            glVertex3f (sl[0][i]._x,sl[0][i]._y,sl[0][i]._z);
+            glVertex3f (sl[0][i+1]._x,sl[0][i+1]._y,sl[0][i+1]._z);
+            glEnd();
+    return
+            
 def setVectorfield(xf,vf):
     global g_vecFieldPos
     g_vecFieldPos = xf
@@ -184,22 +204,26 @@ def Draw ():
     glMultMatrixf(g_Transform);										# // NEW: Apply Dynamic Transform
     glColor3f(0.8,0.75,1.0);
     drawVectorfield(g_vecFieldPos,g_vecFieldValue,0.5)
-    streamLine(g_streamLinePos,g_streamLineValue)
+    drawStreamLines()
+    #streamLine(g_streamLinePos,g_streamLineValue)
     glPopMatrix();													# // NEW: Unapply Dynamic Transform
     
     glLoadIdentity();												# // Reset The Current Modelview Matrix
     glTranslatef(0.0,0.0,-15.0);										
     glPushMatrix();													# // NEW: Prepare Dynamic Transform
     glMultMatrixf(g_Transform);										# // NEW: Apply Dynamic Transform
+    
+    #Define Sphere here!!
     glColor3f(1.0,0.75,0.75);
     glPolygonMode(GL_FRONT_AND_BACK,GL_LINE)
-    #Define Sphere here!!
     glLineWidth(1.0)
     gluSphere(g_quadratic,2.92,20,20);
-    glColor3f(1.0,0.5,0.75);
-    glPolygonMode(GL_FRONT_AND_BACK,GL_FILL)
+    
     #Define Sphere here!!
+    glColor3f(1.0,0.1,0.1);
+    glPolygonMode(GL_FRONT_AND_BACK,GL_FILL)
     gluSphere(g_quadratic,0.53,20,20);
+    
     glPopMatrix();													# // NEW: Unapply Dynamic Transform
     glFlush ();														# // Flush The GL Rendering Pipeline
     glutSwapBuffers()
