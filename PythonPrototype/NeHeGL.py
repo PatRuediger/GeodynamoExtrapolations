@@ -33,8 +33,8 @@ ESCAPE = '\033'
 # Number of the glut window.
 window = 0
 g_zoomfactor = 45.0
-g_Width = 640
-g_Height = 480
+g_Width = 1024
+g_Height = 768
 
 
 
@@ -111,7 +111,7 @@ def main():
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_ALPHA | GLUT_DEPTH)
 	
 	# get a 640 x 480 window 
-	glutInitWindowSize(640, 480)
+	glutInitWindowSize(1024, 768)
 	
 	# the window starts at the upper left corner of the screen 
 	glutInitWindowPosition(0, 0)
@@ -153,7 +153,7 @@ def main():
 	# tying in a rendering context, so we are ready to start making immediate mode
 	# GL calls.
 	# Call to perform inital GL setup (the clear colors, enabling modes
-	Initialize (640, 480)
+	Initialize (1024, 768)
 
 	# Start Event Processing Engine	
 	glutMainLoop()

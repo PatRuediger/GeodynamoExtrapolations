@@ -43,6 +43,7 @@ hICB=ndarray((6,6))
 ar= 2.91
 #inner core boundary radius
 icb = 5.380000000000000E-001
+ocb = 1.538461538462
 # data Object
 data = AvsUcdAscii()
 
@@ -64,17 +65,14 @@ def useIGRFonly():
 def getGaussCoef(radius):
     
     """IGRF only for testing pruposes"""
-    if (radius>ar):
-      #  print("IGRF used")
-        return gIGRF,hIGRF
-    elif (radius<=ar and (radius >(ar-icb)*0.8)):
-     #   print("RE used")
+    if (radius>icb):
+       # print("RE used",radius)
         return gRE,hRE
-    elif (radius <=(ar-icb)*0.8):
-     #   print("ICB used")
+    elif (radius <=icb):
+      #  print("ICB used",radius)
         return gICB,hICB
     else:
-        print("Error in radius")
+        print("Error in radius",radius)
 
 def sphericalHarmoAnalysis(x):
     """Evaluates the spherical harmonics equation for the magnetic field, with degree n
@@ -265,28 +263,37 @@ def adaptStep(x1,v1,x2,v2,dt):
     #Error respective to cos(angle) with angle between the two steps 
     # 1%    = 0.9980267284282716
     # 0.1 % = 0.999980261
-    err_up =  0.999    
+    err_up =  0.9999    
     err_down = 0.99999
     dtn = dt    
     #decrease stepsize when error is too high 
     if (datastructure.dot(v1,v2)/(v1._length()*v2._length() ) ) < err_up: 
         #print(datastructure.dot(v1,v2)/(v1._length()*v2._length() ),"error too high")
-        dtn/= 10.0
+        dtn/= 5.0
         #print("stepsize decreased",dtn)
         return True, dtn
     #increase stepsize when error is very small
     elif (datastructure.dot(v1,v2)/(v1._length()*v2._length() ) ) > err_down:
      #   print(datastructure.dot(v1,v2)/(v1._length()*v2._length() ),"error too low")
-        dtn*=10.0
+        dtn*=2.0
         #print("stepsize increased",dtn)        
         return True, dtn
     else:
         return False, dtn
 
-def rk4(x, v, a, t, dt):
+def rk4_backwards(x,v,a,t,dt):
+    """Returns final (position, magnetic field) tuple after
+    time dt has passed. In backwards order
+
+    x: initial position (Point3D)
+    v: initial magnetic field (Point3D)
+    a: evaluation fucntion a(x,t) (must be callable) should return a vector valued item (e.g. trilinear interpolation)
+    dt: timestep (number)"""
+    return
+
+def rk4(x, v, a, t, dt,direction="forward"):
     """Returns final (position, magnetic field) tuple after
     time dt has passed.
-
     x: initial position (Point3D)
     v: initial magnetic field (Point3D)
     a: evaluation fucntion a(x,t) (must be callable) should return a vector valued item (e.g. trilinear interpolation)
@@ -300,6 +307,14 @@ def rk4(x, v, a, t, dt):
     k2 = a(x0.add(k1.mult(dt/2.0)),t + dt/2.0)
     k3 = a(x0.add(k2.mult(dt/2.0)),t + dt/2.0)
     k4 = a(x0.add(k3.mult(dt)),t + dt)
+    
+    if(direction == "backward"):
+        """invert Vector"""
+        k1 = k1.mult(-1.0)
+        k2 = k2.mult(-1.0)
+        k3 = k3.mult(-1.0)
+        k4 = k4.mult(-1.0)
+        #print("RK4 backwards used")
     
     k1 = k1.mult(1.0/6.0 * dt)    
     k2 = k2.mult(2.0/6.0 * dt)
@@ -321,6 +336,14 @@ def rk4(x, v, a, t, dt):
     k2 = a(x0.add(k1.mult(dt2/2.0)),t + dt2/2.0)
     k3 = a(x0.add(k2.mult(dt2/2.0)),t + dt2/2.0)
     k4 = a(x0.add(k3.mult(dt2)),t + dt2)
+    
+    if(direction == "backward"):
+        """invert Vector"""
+        k1 = k1.mult(-1.0)
+        k2 = k2.mult(-1.0)
+        k3 = k3.mult(-1.0)
+        k4 = k4.mult(-1.0)
+        #print("RK4 backwards used")
     
     k1 = k1.mult(1.0/6.0 * dt2)    
     k2 = k2.mult(2.0/6.0 * dt2)
