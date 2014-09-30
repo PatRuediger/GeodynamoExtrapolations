@@ -5,6 +5,7 @@ Created on Sat Sep 06 11:22:36 2014
 @author: Patrick
 """
 from sphericalharmo import *
+import datastructure as ds
 
 def dipol_vf():
     return    
@@ -17,7 +18,7 @@ def test_Dipol_VF():
     for theta in range(10,2*3141,315):
         for phi in range(10,3141,158):
             for radi in range(292,1000,120):
-                tpr = datastructure.Point3D(theta/1000.0, phi/1000.0, radi/100.0)
+                tpr = ds.Point3D(theta/1000.0, phi/1000.0, radi/100.0)
                 xyz = toCartesian(tpr)
                 xf.append(xyz)          
     """calculate VF Values"""
@@ -31,13 +32,13 @@ def test_Dipol_VF():
 
 def testRK_Dipol_SL(theta,phi,r,direction,tmax=1.0e+10,t0=0.8e-3,max_steps=10000):
     loadGaussCoefSimu("../../Gauss_RE.dat","../../Gauss_ICB.dat")
-    #useIGRFonly() #overrites all other Coefficients
+    data = ds.AvsUcdAscii()
+    data.loadFile('E:/Uni/GeodynamicsProject/Datasets/out.1550.inp')
     sl=[]
     vl=[]
     t=t0
-    tpr0 = datastructure.Point3D(theta, phi,r)
+    tpr0 = ds.Point3D(theta, phi,r)
     xyz0 = toCartesian(tpr0)
-    #xyz0 = xyz0.mult(10.0)
     v0 = evalSHA(xyz0, None)
     sl.append(xyz0)
     vl.append(v0)
@@ -48,27 +49,25 @@ def testRK_Dipol_SL(theta,phi,r,direction,tmax=1.0e+10,t0=0.8e-3,max_steps=10000
     i= 0 
     while (max_steps>i) and (t<tmax):
        # print(((t-t0)*100.0)/(tmax-t0),"% finished ..... ")
-        if(((toSpherical(nextPos)._z)<1.538461538462E+0) and i>1):
+        if(((toSpherical(nextPos)._z)<1.538461538462E+0)):
             print("inner core reached",toSpherical(nextPos))
-            
-            break
+            xf,vf,t2,xf2,vf2,tf2 = rk4(nextPos,nextVal,data.getValue,t,t0,direction)
+            #break
         #print("next pos spherical :",toSpherical(nextPos));
-        xf,vf,t2,xf2,vf2,tf2 = rk4(nextPos,nextVal,evalSHA,t,t0,direction)
+        else:
+            xf,vf,t2,xf2,vf2,tf2 = rk4(nextPos,nextVal,evalSHA,t,t0,direction)
         """adapt stepsize"""
         needAdapt= adaptStep(xf,vf,xf2,vf2,t0)[0]
         while needAdapt:
             needAdapt, t0 = adaptStep(xf,vf,xf2,vf2,t0)
-            xf,vf,t2,xf2,vf2,tf2 = rk4(xf,vf,evalSHA,t,t0,direction)
+            if(((toSpherical(nextPos)._z)<1.538461538462E+0)):
+                xf,vf,t2,xf2,vf2,tf2 = rk4(xf,vf,data.getValue,t,t0,direction)
+            #break
+        #print("next pos spherical :",toSpherical(nextPos));
+            else:
+                xf,vf,t2,xf2,vf2,tf2 = rk4(xf,vf,evalSHA,t,t0,direction)
         nextPos = xf
         nextVal = vf
-        """if((((toSpherical(nextPos)._z)<2.92) or (toSpherical(nextPos)._z)>100.0) and i>1):
-            #print("mantle reached",toSpherical(nextPos))     
-            xsp = project_on_boundary(xf,vf,2.92)
-            vf=evalSHA(xsp,t)
-            sl.append(xsp)
-            vl.append(vf)
-            i+=1
-            break"""
         t=t2
         sl.append(xf)
         vl.append(vf)
@@ -86,7 +85,7 @@ def project_on_boundary(x,v,r):
     sp_t= xs._x + a*vs._x
     sp_p= xs._y + a*vs._y
     sp_r=r
-    sp = datastructure.Point3D(sp_t,sp_p,sp_r)
+    sp = ds.Point3D(sp_t,sp_p,sp_r)
     print("SP with Boundary in Spherical Coords: ", sp,vs)    
     return toCartesian(sp)
 
@@ -101,7 +100,7 @@ def testSHA_SL(x,y,z,mx,my,mz):
     step = 0.8e-2
     max_steps = 4000
     t=step
-    tpr0 = datastructure.Point3D(0.75*math.pi, 0.5*math.pi,2.91)
+    tpr0 = ds.Point3D(0.75*math.pi, 0.5*math.pi,2.91)
     xyz0 = toCartesian(tpr0)
     v0 = evalSHA(xyz0, None)
     sl.append(xyz0)
@@ -145,7 +144,7 @@ def testSHAwithVecfield():
     xf = []
     for theta in range(10,2*3141,315):
         for phi in range(10,3141,158):
-            tpr = datastructure.Point3D(theta/1000.0, phi/1000.0, 3.0)
+            tpr = ds.Point3D(theta/1000.0, phi/1000.0, 3.0)
             xyz = toCartesian(tpr)
             xf.append(xyz)
           #print(tpr._x, tpr._y, tpr._z)
@@ -158,23 +157,71 @@ def testSHAwithVecfield():
         vf.append(v)
     Vis.setVectorfield(xf,vf)
     return
+
+def testPerfectDipol(theta, phi,r,direction,tmax=1.0e+10,t0=0.8e-3,max_steps=10000):
+    sl=[]
+    vl=[]
+    t=t0
+    tpr0 = ds.Point3D(theta, phi,r)
+    xyz0 = toCartesian(tpr0)
+    #xyz0 = xyz0.mult(10.0)
+    v0 = perfectDipol(xyz0, None)
+    sl.append(xyz0)
+    vl.append(v0)
+    nextVal=v0
+    nextPos=xyz0
+    print("Start new Streamline with:", tpr0,toSphericalVecfield(tpr0,v0),direction)
+    #print(tpr0,toSphericalVecfield(tpr0,v0))
+    i= 0 
+    while (max_steps>i) and (t<tmax):
+        if((toSpherical(nextPos)._z)<2.85):
+            print("inner core reached",toSpherical(nextPos))
+            break
+        xf,vf,t2,xf2,vf2,tf2 = rk4(nextPos,nextVal,perfectDipol,t,t0,direction)
+        """adapt stepsize"""
+        needAdapt= adaptStep(xf,vf,xf2,vf2,t0)[0]
+        while needAdapt:
+            needAdapt, t0 = adaptStep(xf,vf,xf2,vf2,t0)
+            xf,vf,t2,xf2,vf2,tf2 = rk4(xf,vf,perfectDipol,t,t0,direction)
+        nextPos = xf
+        nextVal = vf
+        t=t2
+        sl.append(xf)
+        vl.append(vf)
+        #print("step #",i,toSpherical(xf), vf,t)
+        i+=1
+    print(len(sl))
+    print("i",i,"sl[i]",toSpherical(sl[i]),"vl[i]",toSphericalVecfield(toSpherical(sl[i]),vl[i]))
+    Vis.addStreamLine(sl,vl)
+    return toSpherical(sl[i])
+    
+def perfectDipol(x,dt):
+    xs = toSpherical(x)
+    m_dipol= 1.0 ##magnetic dipol moment, only got the r component, as it is (0,0,1)
+    m = m_dipol*x._z ## scalar produkt of dipol moment and position
+    mu_dipol=1.0##magnetic field constant
+    c = mu_dipol/(4*math.pi*(xs._z**3))
+    force = 1.8
+    x_dipol = c*(3.0*x._x*m) 
+    y_dipol = c*(3.0*x._y*m)
+    z_dipol = c*(3.0*x._z*m - force*xs._z**2)
+    vs = ds.Point3D(x_dipol,y_dipol,z_dipol)
+    return vs
     
 def main():
-    """only dummy values here """
-    #testSHA_SL(1.0879, 0.0, -1.0879, 0,0,0)
-    #testSHAwithVecfield()
+    """Test of Extrapolation Method """
     for phi in range(10,2*3141,500):
-    #testRK_Dipol_SL(0.4,0.3,2.92,"forward")
-    #testRK_Dipol_SL(2.84431336653,0.316874099056,1.53885135427,"backward")
-    #testRK_Dipol_SL(0.4,0.3,2.3,"forward")
-    #testRK_Dipol_SL(2.79444401961,0.308736754348,1.69644078527,"backward")
-    #testRK_Dipol_SL(0.3,1.2,3.0,"forward")
-    #testRK_Dipol_SL(2.8425811947,1.20006043021,2.97663206193,"backward")
-        testRK_Dipol_SL(0.45,phi/1000.0,2.3,"forward")
-        testRK_Dipol_SL(0.3,phi/1000.0,2.3,"forward")
-        testRK_Dipol_SL(0.6,phi/1000.0,2.3,"forward")
-  #      testRK_Dipol_SL(0.4,0.8,3.0)
-    #test_Dipol_VF()
+       testRK_Dipol_SL(1.4,phi/1000.0,2.8,"forward")
+       # testRK_Dipol_SL(0.3,phi/1000.0,2.3,"forward")
+       # testRK_Dipol_SL(0.6,phi/1000.0,2.3,"forward")
+    """Test of whole Streamline Vis"""    
+    testRK_Dipol_SL(0.3,0.1,2.3,"forward")
+    """test of Integration Method"""
+    #endpoint = testPerfectDipol(0.3,10/1000.0,2.9,"forward")
+    #endpoint1 = testPerfectDipol(endpoint._x,endpoint._y,endpoint._z,"backward")
+    #err=endpoint._x - endpoint1._x + endpoint._y - endpoint1._y +endpoint._z - endpoint1._z
+    #print("Error for RK4: ", err)
+    """end of Test"""
     NeHeGL.main()
 
 if __name__ == "__main__":

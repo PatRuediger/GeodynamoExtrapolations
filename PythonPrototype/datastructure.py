@@ -15,7 +15,7 @@ import math
 def mainTest():
     print('Main startet')
     DS = AvsUcdAscii()
-    DS.loadFile('C:\out.1550.inp')
+    DS.loadFile('E:/Uni/GeodynamicsProject/Datasets/out.1550.inp')
 
 def testInterpolation():
     v0 = Vertex(0,Point3D(0,0,0),Point3D(0,0,0))
@@ -200,10 +200,10 @@ class AvsUcdAscii:
     _cellList =[]
 #---class Methods
     # Constructor method
-#    def __init__(self):
-#          return
+    def __init__(self):
+          return
     ## returns the interpolated value at position x
-    def getValue(self,x):
+    def getValue(self,x,dt):
         if self._firstCell is not None:
             return self._firstCell.trilinear(x)
 
