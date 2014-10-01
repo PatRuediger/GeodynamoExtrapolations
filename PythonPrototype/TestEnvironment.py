@@ -32,8 +32,8 @@ def test_Dipol_VF():
 
 def testRK_Dipol_SL(theta,phi,r,direction,tmax=1.0e+10,t0=0.8e-3,max_steps=10000):
     loadGaussCoefSimu("../../Gauss_RE.dat","../../Gauss_ICB.dat")
-    data = ds.AvsUcdAscii()
-    data.loadFile('E:/Uni/GeodynamicsProject/Datasets/out.1550.inp')
+    #data = ds.AvsUcdAscii()
+    #data.loadFile('E:/Uni/GeodynamicsProject/Datasets/out.1550.inp')
     sl=[]
     vl=[]
     t=t0
@@ -51,8 +51,8 @@ def testRK_Dipol_SL(theta,phi,r,direction,tmax=1.0e+10,t0=0.8e-3,max_steps=10000
        # print(((t-t0)*100.0)/(tmax-t0),"% finished ..... ")
         if(((toSpherical(nextPos)._z)<1.538461538462E+0)):
             print("inner core reached",toSpherical(nextPos))
-            xf,vf,t2,xf2,vf2,tf2 = rk4(nextPos,nextVal,data.getValue,t,t0,direction)
-            #break
+            #xf,vf,t2,xf2,vf2,tf2 = rk4(nextPos,nextVal,data.getValue,t,t0,direction)
+            break
         #print("next pos spherical :",toSpherical(nextPos));
         else:
             xf,vf,t2,xf2,vf2,tf2 = rk4(nextPos,nextVal,evalSHA,t,t0,direction)
@@ -215,12 +215,12 @@ def main():
        # testRK_Dipol_SL(0.3,phi/1000.0,2.3,"forward")
        # testRK_Dipol_SL(0.6,phi/1000.0,2.3,"forward")
     """Test of whole Streamline Vis"""    
-    testRK_Dipol_SL(0.3,0.1,2.3,"forward")
+    #testRK_Dipol_SL(0.3,0.1,2.3,"forward")
     """test of Integration Method"""
-    #endpoint = testPerfectDipol(0.3,10/1000.0,2.9,"forward")
+    #endpoint = testPerfectDipol(0.2,10/1000.0,2.9,"forward")
     #endpoint1 = testPerfectDipol(endpoint._x,endpoint._y,endpoint._z,"backward")
     #err=endpoint._x - endpoint1._x + endpoint._y - endpoint1._y +endpoint._z - endpoint1._z
-    #print("Error for RK4: ", err)
+    print("Error for RK4: ", err)
     """end of Test"""
     NeHeGL.main()
 
