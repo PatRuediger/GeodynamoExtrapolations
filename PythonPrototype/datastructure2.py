@@ -17,15 +17,10 @@ Data structure for Visualization
 Using hexahedron Grid cells with 8 vertices
 """
 import math
-<<<<<<< HEAD
-#from sphericalharmo import toSpherical
-=======
->>>>>>> origin/master
 
 
 def mainTest():
     print('Main startet')
-<<<<<<< HEAD
     DS = VTKData()
     DS.loadFile('C:/out.1200.vtk')
     output=[]
@@ -37,11 +32,7 @@ def mainTest():
         output.append(DS.getValue(x1,1.0))
     #print("Interpolated Value",output)    
     
-=======
-    DS = AvsUcdAscii()
-    DS.loadFile('C:/out.1550.inp')
 
->>>>>>> origin/master
 def testInterpolation():
     v0 = Vertex(0,Point3D(0,0,0),Point3D(0,0,1))
     v1 = Vertex(1,Point3D(0,0,1),Point3D(1,0,1))
@@ -67,7 +58,6 @@ def dot(a,b):
         b0 = b
         return a0._x * b0._x + a0._y * b0._y + a0._z * b0._z
 
-<<<<<<< HEAD
 #Coordinate transformation Cartesian  to Spherical
 def toSpherical(x):
     v=Point3D(0,0,0)
@@ -78,10 +68,7 @@ def toSpherical(x):
     #r
     v._z = x._length()
     return v
-    
-=======
 
->>>>>>> origin/master
 class Point3D:
 #    _x = 0.0
 #    _y = 0.0
@@ -102,11 +89,7 @@ class Point3D:
         else: print("Point got only 3-Dimensions, use _length() ")
     
     def scalarProduct(self,x):
-<<<<<<< HEAD
         return self._x*x._x+self._y*x._y +self._z*x._z
-=======
-        return self._x+x._x+self._y+x._y +self._z+x._z
->>>>>>> origin/master
          
     def mult(self,scalar):
         return Point3D(self._x * scalar,self._y * scalar,self._z * scalar)
@@ -132,11 +115,9 @@ class Vertex:
     _mag = Point3D(0,0,0)
     #Pointer to nex Vertex
     _nextVertex = None
-<<<<<<< HEAD
-    
+   
     _partOfCell=[]
-=======
->>>>>>> origin/master
+
 
 #---class Methods
     # Constructor method
@@ -144,10 +125,7 @@ class Vertex:
         self._ID = ID
         self._pos = pos
         self._mag = mag
-<<<<<<< HEAD
         self._partOfCell = []
-=======
->>>>>>> origin/master
 
     def addVertex(self,ID,pos,mag):
         newVertex = Vertex(ID,pos,mag)
@@ -160,10 +138,6 @@ class Vertex:
 class Cell:
 #---class Attributes should only be readed
     _ID = 0
-<<<<<<< HEAD
-    
-=======
->>>>>>> origin/master
     # should be 8 everytime
     # ordering: c000,c001,c101,c100,c010,c011,c111,c110
     # leads to 0,1,2,3,4,5,6,7 in the array
@@ -171,30 +145,18 @@ class Cell:
     #Pointer to next Cell
     _nextCell = None
     
-<<<<<<< HEAD
     #Face sharing neighbours
     #the order is not given
     #To access the cells in the list, you must use ID-1
     _neighbours=[]
-=======
-    #direction vectors of all edges from vertex i to j
-    _u = [[0 for x in xrange(8)] for x in xrange(8)]
-    
->>>>>>> origin/master
 
 #---class Methods
     # Constructor method
     def __init__(self,ID,v0,v1,v2,v3,v4,v5,v6,v7):
         self._verts = [v0,v1,v2,v3,v4,v5,v6,v7]
         self._ID = ID
-<<<<<<< HEAD
-=======
-        for i in xrange(8):
-            for j in xrange(8):
-                temp=self._verts[j]._pos.sub(self._verts[i]._pos)
-                if(temp[0]==0 and temp[1]==0 and temp[2]==0):self._u[i][j] = temp 
-                else: self._u[i][j] = temp.mult(1.0/temp._length())
->>>>>>> origin/master
+
+
 
     def addCell(self,ID,v0,v1,v2,v3,v4,v5,v6,v7):
         newCell = Cell(ID,v0,v1,v2,v3,v4,v5,v6,v7)
@@ -209,7 +171,6 @@ class Cell:
             return True
         else:
             return False
-<<<<<<< HEAD
     
     def gridSize(self):
         bounds = self.boundaries()
@@ -218,9 +179,6 @@ class Cell:
         gridlen.append(bounds[4]-bounds[1])
         gridlen.append(bounds[5]-bounds[2])
         return min(gridlen)
-=======
-
->>>>>>> origin/master
 
             
     ## @input is an array  with 3 entries
@@ -233,18 +191,13 @@ class Cell:
             y1=self._verts[4]._pos[1]
             z0=self._verts[0]._pos[2]
             z1=self._verts[1]._pos[2]
-<<<<<<< HEAD
+
             if((x1-x0)==0.0): xd=0.0
             else: xd = (x[0]-x0)/(x1-x0)
             if((y1-y0)==0.0): yd =0.0
             else: yd = (x[1]-y0)/(y1-y0)
             if((z1-z0)==0.0): zd=0.0
             else: zd = (x[2]-z0)/(z1-z0)
-=======
-            xd = (x[0]-x0)/(x1-x0)
-            yd = (x[1]-y0)/(y1-y0)
-            zd = (x[2]-z0)/(z1-z0)
->>>>>>> origin/master
 
             c00 =  Point3D(0,0,0)
             c10 =  Point3D(0,0,0)
@@ -268,15 +221,9 @@ class Cell:
             c1=c1.add(c11.mult(yd))
             c = c0.mult(1.0-zd)
             c=c.add(c1.mult(zd))
-<<<<<<< HEAD
             return True,c,self
         else:
             return False,None,self
-=======
-            return True,c
-        else:
-            return False,None
->>>>>>> origin/master
 
     def boundaries(self):
         min_x = 10000000000000000.0
@@ -302,7 +249,7 @@ class Cell:
         #print(bounds)
         return bounds
 
-<<<<<<< HEAD
+
 class VTKData:
     """class for VTK Data Files"""
     _currentCell=None
@@ -465,18 +412,14 @@ class VTKData:
         print(max(li_length))
 
     
-=======
->>>>>>> origin/master
+
 
 class AvsUcdAscii:
 #---class Attributes should only be readed
     _firstVertex = None
     _lastVertex = None
-<<<<<<< HEAD
     _currentCell = None
-=======
-    _firstCell = None
->>>>>>> origin/master
+
     _lastCell = None
     _numVert =0
     _numCells = 0
@@ -487,10 +430,7 @@ class AvsUcdAscii:
     # Constructor method
     def __init__(self):
           return
-<<<<<<< HEAD
-      
 
-            
             
     ## returns the interpolated value at position x
     def getValue(self,x,dt):
@@ -520,16 +460,7 @@ class AvsUcdAscii:
         print("Point not found in dataset")
     
         
-=======
-    ## returns the interpolated value at position x
-    def getValue(self,x,dt):
-        if self._firstCell is not None:
-            for cell in self._cellList:
-                isFound,intPoint = cell.trilinear(x)
-                if(isFound): return intPoint
-            print("Point not found in dataset")
-            
->>>>>>> origin/master
+
     ## read in data file
     def loadFile(self,path):
         with open(path,'r') as file:
@@ -579,15 +510,12 @@ class AvsUcdAscii:
                     ID = int(entries[0])
                     currentCell = Cell(ID,self._vertexList[int(entries[3])-1],self._vertexList[int(entries[4])-1],self._vertexList[int(entries[5])-1],self._vertexList[int(entries[6])-1],self._vertexList[int(entries[7])-1],self._vertexList[int(entries[8])-1],self._vertexList[int(entries[9])-1],self._vertexList[int(entries[10])-1])
                     self._cellList.append(currentCell)
-<<<<<<< HEAD
                     ##add link from vertex to cell
                     for ki in range(3,11,1):
                         self._vertexList[int(entries[ki])-1]._partOfCell.append(ID)
                         #print("lenght of part of Cell List for ID: ",int(entries[ki]), len(self._vertexList[int(entries[ki])-1]._partOfCell))
                     self._currentCell = currentCell
-=======
-                    self._firstCell = currentCell
->>>>>>> origin/master
+
                     cell_counter +=1
                 elif cell_counter <= self._numCells:
                     if (cell_counter*100/self._numCells)>=(10*i):
@@ -595,7 +523,6 @@ class AvsUcdAscii:
                         i+=1
                     ID = int(entries[0])
                     self._cellList.append(Cell(ID,self._vertexList[int(entries[3])-1],self._vertexList[int(entries[4])-1],self._vertexList[int(entries[5])-1],self._vertexList[int(entries[6])-1],self._vertexList[int(entries[7])-1],self._vertexList[int(entries[8])-1],self._vertexList[int(entries[9])-1],self._vertexList[int(entries[10])-1]))
-<<<<<<< HEAD
                     ##add link from vertex to cell
                     for ki in range(3,11,1):
                         self._vertexList[int(entries[ki])-1]._partOfCell.append(ID)
@@ -603,8 +530,7 @@ class AvsUcdAscii:
                         tempList=list(set(self._vertexList[int(entries[ki])-1]._partOfCell))
                         self._vertexList[int(entries[ki])-1]._partOfCell=tempList
                         #print("lenght of part of Cell List for ID: ",int(entries[ki]), len(tempList))
-=======
->>>>>>> origin/master
+
                     cell_counter +=1
                 elif value_counter is 1:
                     ## skip the line
@@ -621,7 +547,6 @@ class AvsUcdAscii:
                     v = self._vertexList[(int(entries[0]))-1]
                     v._mag = Point3D(float(entries[1]),float(entries[2]),float(entries[3]))
                     value_counter +=1
-<<<<<<< HEAD
             self.computeCellTopology()
 
     def computeCellTopology(self):
@@ -647,9 +572,6 @@ class AvsUcdAscii:
             li_length.append(len(vertex._partOfCell))    
             del(vertex._partOfCell[:])
         print(max(li_length))
-=======
-
->>>>>>> origin/master
     ## return Vertex from his ID
     def getVertex(self,ID):
         vertex = self._firstVertex
