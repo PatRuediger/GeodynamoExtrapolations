@@ -9,10 +9,11 @@ Algortithms for data extraction and Extrapolation
 
 """
 
-import datastructure
+import datastructure2
 #from datastructure import dot
-from datastructure import Point3D
-from datastructure import AvsUcdAscii
+from datastructure2 import Point3D
+from datastructure2 import dot
+#from datastructure2 import AvsUcdAscii
 from numpy import *
 import math
 #from mpl_toolkits.mplot3d import Axes3D
@@ -45,12 +46,11 @@ ar= 2.91
 icb = 5.380000000000000E-001
 ocb = 1.538461538462
 # data Object
-data = AvsUcdAscii()
+#data = AvsUcdAscii()
 
 
 
-def evalf(x,dt):
-    return data.getValue(x)
+
 
 def evalSHA(x,dt):
     return sphericalHarmoAnalysis(x)
@@ -217,14 +217,14 @@ def deltaLegendre(m,l,x):
 
 #Coordinate transformation Spherical (theta,phi,r)  to Cartesian (x,y,z)
 def toCartesian(x):
-    v=datastructure.Point3D(0,0,0)
+    v=Point3D(0,0,0)
     v._x = x._z*math.sin(x._x)*math.cos(x._y)
     v._y = x._z*math.sin(x._x)*math.sin(x._y)
     v._z = x._z*math.cos(x._x)
     return v
 #Coordinate transformation Cartesian  to Spherical
 def toSpherical(x):
-    v=datastructure.Point3D(0,0,0)
+    v=Point3D(0,0,0)
     #theta
     v._x = math.acos(x._z/x._length())
     #phi
@@ -237,7 +237,7 @@ def toSpherical(x):
 def toSphericalVecfield(x,v):
     """ Pos x has to be in spherical coordinates
     """
-    vf=datastructure.Point3D(0,0,0)
+    vf=Point3D(0,0,0)
     vf._z= v._x*math.sin(x._x)*math.cos(x._y) + v._y*math.sin(x._x)*math.sin(x._y) + v._z*math.cos(x._x)
     vf._x = v._x*math.cos(x._x)*math.cos(x._y) + v._y*math.cos(x._x)*math.sin(x._y) - v._y*math.sin(x._x)
     vf._y = -v._x*math.sin(x._y) + v._y*math.cos(x._y)
@@ -246,7 +246,7 @@ def toSphericalVecfield(x,v):
 def toCartesianVecfield(x,v):
     """ Pos x has to be in spherical coordinates
     """
-    vf=datastructure.Point3D(0,0,0)
+    vf=Point3D(0,0,0)
     vf._x = v._z*math.sin(x._x)*math.cos(x._y) + v._x*math.cos(x._x)*math.cos(x._y)- v._y*math.sin(x._y)
     vf._y = v._z*math.sin(x._x)*math.sin(x._y) + v._x*math.cos(x._x)*math.sin(x._y)+ v._y*math.cos(x._y)
     vf._z = v._z*math.cos(x._x) - v._x*math.sin(x._x)
@@ -254,7 +254,7 @@ def toCartesianVecfield(x,v):
 
 
     
-def adaptStep(x1,v1,x2,v2,dt):
+def adaptStep(v1,v2,dt):
     """
     Input Position, Vector, time(refering to v(t) as a vectorfield), current "time" t, an initial stepsize dt 
     Output boolean,adapted stepsize
@@ -263,17 +263,17 @@ def adaptStep(x1,v1,x2,v2,dt):
     #Error respective to cos(angle) with angle between the two steps 
     # 1%    = 0.9980267284282716
     # 0.1 % = 0.999980261
-    err_up =  0.9999    
-    err_down = 0.99999
+    err_up =  0.999    
+    err_down = 0.9999
     dtn = dt    
     #decrease stepsize when error is too high 
-    if (datastructure.dot(v1,v2)/(v1._length()*v2._length() ) ) < err_up: 
+    if (datastructure2.dot(v1,v2)/( v1._length() * v2._length() ) ) < err_up: 
         #print(datastructure.dot(v1,v2)/(v1._length()*v2._length() ),"error too high")
         dtn/= 5.0
         #print("stepsize decreased",dtn)
         return True, dtn
     #increase stepsize when error is very small
-    elif (datastructure.dot(v1,v2)/(v1._length()*v2._length() ) ) > err_down:
+    elif (datastructure2.dot(v1,v2)/(v1._length()*v2._length() ) ) > err_down:
      #   print(datastructure.dot(v1,v2)/(v1._length()*v2._length() ),"error too low")
         dtn*=2.0
         #print("stepsize increased",dtn)        
@@ -298,8 +298,8 @@ def rk4(x, v, a, t, dt,direction="forward"):
     v: initial magnetic field (Point3D)
     a: evaluation fucntion a(x,t) (must be callable) should return a vector valued item (e.g. trilinear interpolation)
     dt: timestep (number)"""
-    x0 = datastructure.Point3D(x._x,x._y,x._z)
-    v0 = datastructure.Point3D(v._x,v._y,v._z)
+    x0 = Point3D(x._x,x._y,x._z)
+    v0 = Point3D(v._x,v._y,v._z)
     t1= t + dt
     
     """k1 should be equal to v0 """
@@ -327,7 +327,10 @@ def rk4(x, v, a, t, dt,direction="forward"):
     x1 = x1.add(k4)
     
     v1 = a(x1,t1)
-    
+    if(v1 ==None):
+        print("v1 set back to v0' due to numerical error")
+        print(k1,k2,k3,k4)
+        v1=v0.mult(1.0-1e-12)
     ## steer the gaps inbetween here
     dt2 = dt/4.0
     
@@ -377,8 +380,8 @@ def eulerForward(x,v,a,step=1):
     step: initial timestep, only usefull, if it takes very long to find the first step (number)"""
     #error treshold for adaptive stepsize
     err = 0.99999999
-    x0 = datastructure.Point3D(x._x,x._y,x._z)
-    v0 = datastructure.Point3D(v._x,v._y,v._z)
+    x0 = Point3D(x._x,x._y,x._z)
+    v0 = Point3D(v._x,v._y,v._z)
 
     dt = step
 

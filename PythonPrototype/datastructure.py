@@ -15,25 +15,27 @@ import math
 def mainTest():
     print('Main startet')
     DS = AvsUcdAscii()
-    DS.loadFile('E:/Uni/GeodynamicsProject/Datasets/out.1550.inp')
+    DS.loadFile('C:/out.1550.inp')
+    x = Point3D(0.264639452897,0.0265525127273,0.859802840213)
+    output=DS.getValue(x,1.0)
+    print("Interpolated Value",output)
 
 def testInterpolation():
-    v0 = Vertex(0,Point3D(0,0,0),Point3D(0,0,0))
-    v1 = Vertex(1,Point3D(0,1,0),Point3D(0,1,0))
-    v2 = Vertex(2,Point3D(1,1,0),Point3D(1,1,0))
-    v3 = Vertex(3,Point3D(1,0,0),Point3D(1,0,0))
-    v4 = Vertex(4,Point3D(0,0,1),Point3D(0,0,1))
-    v5 = Vertex(5,Point3D(0,1,1),Point3D(0,0,1))
-    v6 = Vertex(6,Point3D(1,1,1),Point3D(1,1,1))
-    v7 = Vertex(7,Point3D(1,1,0),Point3D(1,1,0))
+    v0 = Vertex(0,Point3D(0,0,0),Point3D(0,0,1))
+    v1 = Vertex(1,Point3D(0,0,1),Point3D(1,0,1))
+    v2 = Vertex(2,Point3D(1,0,1),Point3D(0,1,0))
+    v3 = Vertex(3,Point3D(1,0,0),Point3D(1,1,0))
+    v4 = Vertex(4,Point3D(0,1,0),Point3D(0,1,0))
+    v5 = Vertex(5,Point3D(0,1,1),Point3D(1,0,1))
+    v6 = Vertex(6,Point3D(1,1,1),Point3D(0,1,1))
+    v7 = Vertex(7,Point3D(1,1,0),Point3D(1,0,1))
 
     cell = Cell(0,v0,v1,v2,v3,v4,v5,v6,v7)
-    p= [0.5,0.5,0.5]
+    p= [0.2,0.5,0.5]
     output = cell.isInside(p)
     print(output)
     temp = cell.trilinear(p)
-    output = [temp._x,temp._y, temp._z]
-    print(output)
+    print(temp)
 
 """Dot/Scalar Product for 3D Vectors"""
 def dot(a,b):
@@ -57,6 +59,13 @@ class Point3D:
         self._y = y
         self._z = z
 
+    
+    def __getitem__(self,i):
+        if (i==0): return self._x
+        elif(i==1): return self._y
+        elif(i==2): return self._z
+        else: print("Point got only 3-Dimensions, use _length() ")
+        
     def mult(self,scalar):
         return Point3D(self._x * scalar,self._y * scalar,self._z * scalar)
 
@@ -128,9 +137,18 @@ class Cell:
     ## @output is a Point3D
     def trilinear(self,x):
         if(self.isInside(x)):
-            xd = (x[0]-self._verts[0]._pos._x)/(self._verts[6]._pos._x-self._verts[0]._pos._x)
-            yd = (x[1]-self._verts[0]._pos._y)/(self._verts[6]._pos._y-self._verts[0]._pos._y)
-            zd = (x[2]-self._verts[0]._pos._z)/(self._verts[6]._pos._z-self._verts[0]._pos._z)
+            x0=self._verts[0]._pos[0]
+            x1=self._verts[3]._pos[0]
+            y0=self._verts[0]._pos[1]
+            y1=self._verts[4]._pos[1]
+            z0=self._verts[0]._pos[2]
+            z1=self._verts[1]._pos[2]
+            if((x1-x0)==0.0): xd=0.0
+            else: xd = (x[0]-x0)/(x1-x0)
+            if((y1-y0)==0.0): yd =0.0
+            else: yd = (x[1]-y0)/(y1-y0)
+            if((z1-z0)==0.0): zd=0.0
+            else: zd = (x[2]-z0)/(z1-z0)
 
             c00 =  Point3D(0,0,0)
             c10 =  Point3D(0,0,0)
@@ -141,21 +159,19 @@ class Cell:
             c =  Point3D(0,0,0)
 
             c00 = self._verts[0]._mag.mult(1.0-xd)
-            c00.add(self._verts[3]._mag.mult(xd))
+            c00=c00.add(self._verts[3]._mag.mult(xd))
             c10 = self._verts[4]._mag.mult(1.0-xd)
-            c10.add(self._verts[7]._mag.mult(xd))
+            c10=c10.add(self._verts[7]._mag.mult(xd))
             c01 = self._verts[1]._mag.mult(1.0-xd)
-            c01.add(self._verts[2]._mag.mult(xd))
+            c01=c01.add(self._verts[2]._mag.mult(xd))
             c11 = self._verts[5]._mag.mult(1.0-xd)
-            c11.add(self._verts[6]._mag.mult(xd))
-
+            c11=c11.add(self._verts[6]._mag.mult(xd))
             c0= c00.mult(1.0-yd)
-            c0.add(c10.mult(yd))
+            c0=c0.add(c10.mult(yd))
             c1=c01.mult(1.0-yd)
-            c1.add(c11.mult(yd))
-
+            c1=c1.add(c11.mult(yd))
             c = c0.mult(1.0-zd)
-            c.add(c1.mult(zd))
+            c=c.add(c1.mult(zd))
             return c
         elif(self._nextCell is not None):
             self._nextCell.trilinear(x)

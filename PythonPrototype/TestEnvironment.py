@@ -5,7 +5,7 @@ Created on Sat Sep 06 11:22:36 2014
 @author: Patrick
 """
 from sphericalharmo import *
-import datastructure as ds
+import datastructure2 as ds
 
 def dipol_vf():
     return    
@@ -32,8 +32,8 @@ def test_Dipol_VF():
 
 def testRK_Dipol_SL(theta,phi,r,direction,tmax=1.0e+10,t0=0.8e-3,max_steps=10000):
     loadGaussCoefSimu("../../Gauss_RE.dat","../../Gauss_ICB.dat")
-    data = ds.AvsUcdAscii()
-    data.loadFile('E:/Uni/GeodynamicsProject/Datasets/out.1550.inp')
+    #data = ds.AvsUcdAscii()
+    #data.loadFile('E:/Uni/GeodynamicsProject/Datasets/out.1550.inp')
     sl=[]
     vl=[]
     t=t0
@@ -51,8 +51,8 @@ def testRK_Dipol_SL(theta,phi,r,direction,tmax=1.0e+10,t0=0.8e-3,max_steps=10000
        # print(((t-t0)*100.0)/(tmax-t0),"% finished ..... ")
         if(((toSpherical(nextPos)._z)<1.538461538462E+0)):
             print("inner core reached",toSpherical(nextPos))
-            xf,vf,t2,xf2,vf2,tf2 = rk4(nextPos,nextVal,data.getValue,t,t0,direction)
-            #break
+            #xf,vf,t2,xf2,vf2,tf2 = rk4(nextPos,nextVal,data.getValue,t,t0,direction)
+            break
         #print("next pos spherical :",toSpherical(nextPos));
         else:
             xf,vf,t2,xf2,vf2,tf2 = rk4(nextPos,nextVal,evalSHA,t,t0,direction)
@@ -72,6 +72,69 @@ def testRK_Dipol_SL(theta,phi,r,direction,tmax=1.0e+10,t0=0.8e-3,max_steps=10000
         sl.append(xf)
         vl.append(vf)
         #print("step #",i,toSpherical(xf), vf,t)
+        i+=1
+    print("i",i,"sl[i-1]",toSpherical(sl[i-1]),"vl[i-1]",toSphericalVecfield(toSpherical(sl[-1]),vl[i-1]))
+    Vis.addStreamLine(sl,vl)
+    return
+    
+def testRK_Whole_SL(theta,phi,r,direction,tmax=1.0e+10,t0=0.8e-3,max_steps=40000):
+    loadGaussCoefSimu("../../Gauss_RE.dat","../../Gauss_ICB.dat")
+    data = ds.VTKData()
+    data.loadFile('C:/out.1200.vtk')
+    sl=[]
+    vl=[]
+    t=t0
+    tpr0 = ds.Point3D(theta, phi,r)
+    xyz0 = toCartesian(tpr0)
+    v0 = evalSHA(xyz0, None)
+    sl.append(xyz0)
+    vl.append(v0)
+    nextVal=v0
+    nextPos=xyz0
+    max_step=4.0e-5
+    print("Start new Streamline with:", tpr0,toSphericalVecfield(tpr0,v0),direction)
+    #print(tpr0,toSphericalVecfield(tpr0,v0))
+    i= 0 
+    while (max_steps>i) and (t<tmax):
+        #print("step: ", i)
+       # print(((t-t0)*100.0)/(tmax-t0),"% finished ..... ")
+        xdt = nextPos.add(nextVal.mult(t0))
+        #print("x + v*dt: ", toSpherical(xdt))
+        if( ((toSpherical(nextPos)._z)<1.538461538462E+0) and ((toSpherical(nextPos)._z)>0.538461538462E+0)
+            and ((toSpherical(xdt)._z)<1.538461538462E+0) and ((toSpherical(xdt)._z)>0.538461538462E+0)):
+          #  print("inner core reached",toSpherical(nextPos))
+            xf,vf,t2,xf2,vf2,tf2 = rk4(nextPos,nextVal,data.getValue,t,t0,direction)
+            dtmax=data._currentCell.gridSize()/2.0
+           # print("dtmax: ",dtmax)
+          #  print("outer core tracing :  xf[",i,"] ",toSpherical(xf));
+        else:
+            xf,vf,t2,xf2,vf2,tf2 = rk4(nextPos,nextVal,evalSHA,t,t0,direction)
+            dtmax=0.8e-3
+        """adapt stepsize"""
+        if(t0>dtmax): 
+           # print(i,t0,dtmax)            
+            t0=dtmax
+        else:
+            needAdapt= adaptStep(vf,vf2,t0)[0]
+            while needAdapt:
+                #print("Stepsize adapted")
+                needAdapt, t0 = adaptStep(vf,vf2,t0)
+                if(t0>dtmax): 
+                  #  print(i,t0,dtmax)            
+                    t0=dtmax
+                    needAdapt = False                    
+                if(((toSpherical(nextPos)._z)<1.538461538462E+0)):
+                    xf,vf,t2,xf2,vf2,tf2 = rk4(xf,vf,data.getValue,t,t0,direction)
+                #break
+            #print("next pos spherical :",toSpherical(nextPos));
+                else:
+                    xf,vf,t2,xf2,vf2,tf2 = rk4(xf,vf,evalSHA,t,t0,direction)
+        nextPos = xf
+        nextVal = vf
+        t=t2
+        sl.append(xf)
+        vl.append(vf)
+        if(i%100)==0:print("step #",i,toSpherical(xf), vf,t)
         i+=1
     print("i",i,"sl[i-1]",toSpherical(sl[i-1]),"vl[i-1]",toSphericalVecfield(toSpherical(sl[-1]),vl[i-1]))
     Vis.addStreamLine(sl,vl)
@@ -210,14 +273,14 @@ def perfectDipol(x,dt):
     
 def main():
     """Test of Extrapolation Method """
-    for phi in range(10,2*3141,500):
-       testRK_Dipol_SL(1.4,phi/1000.0,2.8,"forward")
+    #for phi in range(10,2*3141,500):
+       #testRK_Dipol_SL(1.4,phi/1000.0,2.8,"forward")
        # testRK_Dipol_SL(0.3,phi/1000.0,2.3,"forward")
        # testRK_Dipol_SL(0.6,phi/1000.0,2.3,"forward")
     """Test of whole Streamline Vis"""    
-    testRK_Dipol_SL(0.3,0.1,2.3,"forward")
+    testRK_Whole_SL(0.3,0.1,0.9,"forward")
     """test of Integration Method"""
-    #endpoint = testPerfectDipol(0.3,10/1000.0,2.9,"forward")
+    #endpoint = testPerfectDipol(0.2,10/1000.0,2.9,"forward")
     #endpoint1 = testPerfectDipol(endpoint._x,endpoint._y,endpoint._z,"backward")
     #err=endpoint._x - endpoint1._x + endpoint._y - endpoint1._y +endpoint._z - endpoint1._z
     #print("Error for RK4: ", err)
