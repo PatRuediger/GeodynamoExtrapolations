@@ -278,12 +278,16 @@ def main():
        # testRK_Dipol_SL(0.3,phi/1000.0,2.3,"forward")
        # testRK_Dipol_SL(0.6,phi/1000.0,2.3,"forward")
     """Test of whole Streamline Vis"""    
+<<<<<<< HEAD
     testRK_Whole_SL(0.3,0.1,0.9,"forward")
+=======
+    #testRK_Dipol_SL(0.3,0.1,2.3,"forward")
+>>>>>>> origin/master
     """test of Integration Method"""
     #endpoint = testPerfectDipol(0.2,10/1000.0,2.9,"forward")
     #endpoint1 = testPerfectDipol(endpoint._x,endpoint._y,endpoint._z,"backward")
     #err=endpoint._x - endpoint1._x + endpoint._y - endpoint1._y +endpoint._z - endpoint1._z
-    #print("Error for RK4: ", err)
+    print("Error for RK4: ", err)
     """end of Test"""
     NeHeGL.main()
 
