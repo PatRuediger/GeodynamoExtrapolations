@@ -47,13 +47,32 @@ icb = 5.380000000000000E-001
 ocb = 1.538461538462
 # data Object
 #data = AvsUcdAscii()
+g_data = None
+isOuterCore = False
+   # isInnerCore = False
+isMantle = False
 
 
 
-
+def setData(data):
+    global g_data
+    g_data = data
 
 def evalSHA(x,dt):
-    return sphericalHarmoAnalysis(x)
+    global isOuterCore
+    global isMantle            
+    if ((toSpherical(x)._z)<=ocb) and ((toSpherical(x)._z)>icb):
+        result = g_data.getValue(x,dt) 
+        if not isOuterCore:print(">>>>>>>>>>>>>>>>>>Going from Mantle to OC: Pos:",toSpherical(x)," Value:",toSpherical(result))
+        isOuterCore = True
+        isMantle = False
+        return g_data.getValue(x,dt)
+    else:
+        result =sphericalHarmoAnalysis(x)
+        if not isMantle:print(">>>>>>>>>>>>>>>>>>Going from OC to Mantle: Pos:",toSpherical(x)," Value:",toSpherical(result))
+        isMantle = True
+        isOuterCore = False         
+        return sphericalHarmoAnalysis(x)
 
 def useIGRFonly():
     gRE = gIGRF
@@ -65,7 +84,7 @@ def useIGRFonly():
 def getGaussCoef(radius):
     
     """IGRF only for testing pruposes"""
-    if (radius>icb):
+    if (radius>ocb):
        # print("RE used",radius)
         return gRE,hRE
     elif (radius <=icb):
@@ -263,8 +282,8 @@ def adaptStep(v1,v2,dt):
     #Error respective to cos(angle) with angle between the two steps 
     # 1%    = 0.9980267284282716
     # 0.1 % = 0.999980261
-    err_up =  0.999    
-    err_down = 0.9999
+    err_up =  0.9999    
+    err_down = 0.99999
     dtn = dt    
     #decrease stepsize when error is too high 
     if (datastructure2.dot(v1,v2)/( v1._length() * v2._length() ) ) < err_up: 

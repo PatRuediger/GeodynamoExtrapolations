@@ -150,7 +150,7 @@ def arrowGlyph(pos,value,scale):
 
 def streamLine(pos,value):
     #// Pos,value are Point3D
-    glLineWidth(2.0);
+    glLineWidth(0.5);
     for i in range(len(pos)-1):
         glBegin( GL_LINES );
         glVertex3f (pos[i]._x,pos[i]._y,pos[i]._z);
@@ -179,7 +179,7 @@ def addStreamLine(xf,vf):
     return
 
 def drawStreamLines():
-    glLineWidth(1.0)
+    glLineWidth(0.8)
     global g_streamLineList
     for sl in g_streamLineList:
         for i in range(len(sl[0])-1):
@@ -202,8 +202,10 @@ def Draw ():
     glTranslatef(0.0,0.0,-15.0);									
     glPushMatrix();													# // NEW: Prepare Dynamic Transform
     glMultMatrixf(g_Transform);										# // NEW: Apply Dynamic Transform
-    glColor3f(0.8,0.75,1.0);
-    drawVectorfield(g_vecFieldPos,g_vecFieldValue,0.5)
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glEnable( GL_BLEND );
+    glColor4f(0.8,0.75,1.0,1.0);
+    #drawVectorfield(g_vecFieldPos,g_vecFieldValue,0.5)
     drawStreamLines()
     #streamLine(g_streamLinePos,g_streamLineValue)
     glPopMatrix();													# // NEW: Unapply Dynamic Transform
@@ -214,13 +216,24 @@ def Draw ():
     glMultMatrixf(g_Transform);										# // NEW: Apply Dynamic Transform
     
     #Define Sphere here!!
-    glColor3f(1.0,0.75,0.75);
+    glEnable(GL_LINE_SMOOTH)
+    glLineWidth(0.01)
+    glColor4f(1.0,0.75,0.75,0.3);
     glPolygonMode(GL_FRONT_AND_BACK,GL_LINE)
-    glLineWidth(1.0)
+    glLineWidth(0.01)
     gluSphere(g_quadratic,2.92,20,20);
     
     #Define Sphere here!!
-    glColor3f(1.0,0.1,0.1);
+    glEnable(GL_LINE_SMOOTH)
+    glLineWidth(0.01)
+    glColor4f(1.0,0.5,0.75,0.3);
+    glPolygonMode(GL_FRONT_AND_BACK,GL_LINE)
+    glLineWidth(0.01)
+    gluSphere(g_quadratic,1.53,20,20);
+    
+    #Define Sphere here!!
+    glEnable(GL_LINE_SMOOTH)
+    glColor4f(1.0,0.1,0.1,0.8);
     glPolygonMode(GL_FRONT_AND_BACK,GL_FILL)
     gluSphere(g_quadratic,0.53,20,20);
     
