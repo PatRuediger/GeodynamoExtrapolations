@@ -23,13 +23,29 @@ def mainTest():
     print('Main startet')
     DS = VTKData()
     DS.loadFile('C:/out.1200.vtk')
-    output=[]
-    x = Point3D(0.264639452897,0.0265525127273,0.859802840213)
-    output.append(DS.getValue(x,1.0))
-    for i in range(1000,11000,1000):
-        x1 = x.mult(1.0 - i*4.0e-6)
-        print(x1)
-        output.append(DS.getValue(x1,1.0))
+    x = []
+    y = []
+    z = []
+    xv = []
+    zv=[]
+    yv=[]
+    for v in DS._vertexList :
+        x.append(v._pos._x)
+        y.append(v._pos._y)
+        z.append(v._pos._z)
+        xv.append(v._mag._x)
+        yv.append(v._mag._y)
+        zv.append(v._mag._z)
+    print(max(x),max(y),max(z))
+    print(min(x),min(y),min(z))
+    print(max(xv),max(yv),max(zv))
+    #output=[]
+    #x = Point3D(0.264639452897,0.0265525127273,0.859802840213)
+    #output.append(DS.getValue(x,1.0))
+    #for i in range(1000,11000,1000):
+      #  x1 = x.mult(1.0 - i*4.0e-6)
+        #print(x1)
+        #output.append(DS.getValue(x1,1.0))
     #print("Interpolated Value",output)    
     
 

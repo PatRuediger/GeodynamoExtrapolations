@@ -27,11 +27,15 @@ g_ArcBall = ArcBallT (1024,768)
 g_isDragging = False
 g_quadratic = None
 
+lmax = []
+
 g_streamLinePos = []
 g_streamLineValue = []
 
 g_vecFieldPos = []
 g_vecFieldValue = []
+g_vecFieldPos2 = []
+g_vecFieldValue2 = []
 
 g_streamLineList = []
 
@@ -135,16 +139,20 @@ def Sphere(center,radius):
 
 def arrowGlyph(pos,value,scale):
     #Normalize the vector
+    maxl=max(lmax)
     value_n = Point3D(value._x/value._length(),value._y/value._length(),value._z/value._length())
     glPointSize( 5.0 );
     glBegin(GL_POINTS);
     glVertex3f(pos._x,pos._y,pos._z);
     glEnd();
+
+    vlen = 0.1 +( scale * value._length() / maxl)   
+   # vlen =scale    
     
     glLineWidth(1.0);
     glBegin(GL_LINES);
     glVertex3f(pos._x,pos._y,pos._z);
-    glVertex3f(pos._x+value_n._x*scale,pos._y+value_n._y*scale,pos._z+value_n._z*scale);
+    glVertex3f(pos._x+value_n._x*vlen,pos._y+value_n._y*vlen,pos._z+value_n._z*vlen);
     glEnd();
     return
 
@@ -158,7 +166,7 @@ def streamLine(pos,value):
         glEnd();
     return
 
-def drawVectorfield(xf,vf,scale=5):
+def drawVectorfield(xf,vf,scale=3):
     """input are two arrays of Point3D and a scaling factor"""
     for i in range(len(xf)-1):
         arrowGlyph(xf[i],vf[i],scale)
@@ -194,6 +202,23 @@ def setVectorfield(xf,vf):
     g_vecFieldPos = xf
     global g_vecFieldValue
     g_vecFieldValue = vf
+    global lmax
+    le =[]
+    for v in vf:
+        le.append(v._length())
+    lmax.append(max(le))
+    return
+    
+def setVectorfield2(xf,vf):
+    global g_vecFieldPos2
+    g_vecFieldPos2 = xf
+    global g_vecFieldValue2
+    g_vecFieldValue2 = vf
+    global lmax2
+    le =[]
+    for v in vf:
+        le.append(v._length())
+    lmax.append(max(le))
     return
 
 def Draw ():
@@ -204,8 +229,10 @@ def Draw ():
     glMultMatrixf(g_Transform);										# // NEW: Apply Dynamic Transform
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable( GL_BLEND );
-    glColor4f(0.8,0.75,1.0,1.0);
-    #drawVectorfield(g_vecFieldPos,g_vecFieldValue,0.5)
+    glColor4f(0.8,0.1,1.0,1.0);
+    drawVectorfield(g_vecFieldPos,g_vecFieldValue,0.3)
+    glColor4f(0.1,0.8,1.0,1.0);
+    drawVectorfield(g_vecFieldPos2,g_vecFieldValue2,0.3)
     drawStreamLines()
     #streamLine(g_streamLinePos,g_streamLineValue)
     glPopMatrix();													# // NEW: Unapply Dynamic Transform

@@ -78,7 +78,7 @@ def testRK_Dipol_SL(theta,phi,r,direction,tmax=1.0e+10,t0=0.8e-3,max_steps=10000
     Vis.addStreamLine(sl,vl)
     return
     
-def testRK_Whole_SL(theta,phi,r,direction,tmax=1.0e+10,t0=0.8e-3,max_steps=400):
+def testRK_Whole_SL(theta,phi,r,direction,tmax=1.0e+10,t0=0.8e-3,max_steps=1000):
     loadGaussCoefSimu("../../Gauss_RE.dat","../../Gauss_ICB.dat")
     data = ds.VTKData()
     data.loadFile('C:/out.1200.vtk')
@@ -99,7 +99,7 @@ def testRK_Whole_SL(theta,phi,r,direction,tmax=1.0e+10,t0=0.8e-3,max_steps=400):
     i= 0
     while (max_steps>i) and (t<tmax):
         xf,vf,t2,xf2,vf2,tf2 = rk4(nextPos,nextVal,evalSHA,t,t0,direction)
-        if(((toSpherical(nextPos)._z)<1.538461538462E+0)):
+        if(((toSpherical(nextPos)._z)<1.537983852128+0)):
             dtmax=data._currentCell.gridSize()/2.0
         else:
             dtmax=1.0
@@ -182,6 +182,43 @@ def testSHA_SL(x,y,z,mx,my,mz):
     #print(tpr,vf,v)
     Vis.addStreamLine(sl,vl)
     return
+    
+def testBoundaryVecField():
+    loadGaussCoefSimu("../../Gauss_RE.dat","../../Gauss_ICB.dat")
+    data = ds.VTKData()
+    data.loadFile('C:/out.1200.vtk')
+    sph.setData(data)
+    xf_mantle=[]
+    xf_oc = []
+    for theta in range(10,2*3141,315):
+        for phi in range(10,3141,158):
+            tpr_m = ds.Point3D(theta/1000.0, phi/1000.0, 1.537983852128 + 1.0e-5)
+            tpr_oc = ds.Point3D(theta/1000.0, phi/1000.0, 1.537983852128 - 1.0e-5)
+            xyz_m = toCartesian(tpr_m)
+            xyz_oc = toCartesian(tpr_oc)
+            xf_mantle.append(xyz_m)
+            xf_oc.append(xyz_oc)
+    vf_mantle = []
+    vf_oc = []
+    i=0
+    for x_m in xf_mantle:
+        #print("MANTEL>>>Pos:",toSpherical(x_m) )
+        v = evalSHA(x_m,1.0)
+        #print("MANTEL>>>Pos:",x_m ,"Value:",v)
+        vf_mantle.append(v)
+    for x_oc in xf_oc:
+        i+=1
+        #print("OC>>>Pos:",toSpherical(x_oc) )
+        v = evalSHA(x_oc,1.0)
+        if((i*100.0/len(xf_oc))%10)==0: print("Evaluation reached: " +str(i*100.0/len(xf_oc)) +"%")
+        #print("OC>>>Pos:",x_oc ,"Value:",v)
+        vf_oc.append(v)
+    #xf = xf_mantle + xf_oc
+    #vf = vf_mantle + vf_oc    
+    Vis.setVectorfield(xf_mantle,vf_mantle)
+    Vis.setVectorfield2(xf_oc,vf_oc)
+    return    
+        
 
 def testSHAwithVecfield():
     loadGaussCoefIGRF("../GausCoef.txt")
@@ -256,6 +293,7 @@ def perfectDipol(x,dt):
     return vs
     
 def main():
+    testBoundaryVecField()
     """Test of Extrapolation Method """
     #for phi in range(10,2*3141,500):
        #testRK_Dipol_SL(1.4,phi/1000.0,2.8,"forward")
@@ -265,7 +303,7 @@ def main():
     ##----degenereted case
     #testRK_Whole_SL(1.4,0.6,1.1,"forward")
     ##
-    testRK_Whole_SL(0.8,0.6,1.1,"forward")
+    #testRK_Whole_SL(0.8,0.6,1.1,"forward")
     """test of Integration Method"""
     #endpoint = testPerfectDipol(0.2,10/1000.0,2.9,"forward")
     #endpoint1 = testPerfectDipol(endpoint._x,endpoint._y,endpoint._z,"backward")

@@ -44,7 +44,7 @@ hICB=ndarray((6,6))
 ar= 2.91
 #inner core boundary radius
 icb = 5.380000000000000E-001
-ocb = 1.538461538462
+ocb = 1.537983852128
 # data Object
 #data = AvsUcdAscii()
 g_data = None
@@ -63,16 +63,18 @@ def evalSHA(x,dt):
     global isMantle            
     if ((toSpherical(x)._z)<=ocb) and ((toSpherical(x)._z)>icb):
         result = g_data.getValue(x,dt) 
-        if not isOuterCore:print(">>>>>>>>>>>>>>>>>>Going from Mantle to OC: Pos:",toSpherical(x)," Value:",toSpherical(result))
+        #if not isOuterCore:print(">>>>>>>>>>>>>>>>>>Going from Mantle to OC: Pos:",toSpherical(x)," Value:",toSpherical(result))
+        #print("OC")
         isOuterCore = True
         isMantle = False
-        return g_data.getValue(x,dt)
+        return result
     else:
         result =sphericalHarmoAnalysis(x)
-        if not isMantle:print(">>>>>>>>>>>>>>>>>>Going from OC to Mantle: Pos:",toSpherical(x)," Value:",toSpherical(result))
+        #if not isMantle:print(">>>>>>>>>>>>>>>>>>Going from OC to Mantle: Pos:",toSpherical(x)," Value:",toSpherical(result))
+        #print("Mantle")
         isMantle = True
         isOuterCore = False         
-        return sphericalHarmoAnalysis(x)
+        return result
 
 def useIGRFonly():
     gRE = gIGRF
