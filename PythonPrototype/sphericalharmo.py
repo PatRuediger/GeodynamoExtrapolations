@@ -36,10 +36,10 @@ plotColor=[]
 n=4
 gIGRF=ndarray((6,6))
 hIGRF=ndarray((6,6))
-gRE=ndarray((6,6))
-hRE=ndarray((6,6))
-gICB=ndarray((6,6))
-hICB=ndarray((6,6))
+gRE=ndarray((90,90))
+hRE=ndarray((90,90))
+gICB=ndarray((90,90))
+hICB=ndarray((90,90))
 #earth radius
 ar= 2.91
 #inner core boundary radius
@@ -61,20 +61,20 @@ def setData(data):
 def evalSHA(x,dt):
     global isOuterCore
     global isMantle            
-    if ((toSpherical(x)._z)<=ocb) and ((toSpherical(x)._z)>icb):
+    """ if ((toSpherical(x)._z)<=ocb) and ((toSpherical(x)._z)>icb):
         result = g_data.getValue(x,dt) 
         #if not isOuterCore:print(">>>>>>>>>>>>>>>>>>Going from Mantle to OC: Pos:",toSpherical(x)," Value:",toSpherical(result))
         #print("OC")
         isOuterCore = True
         isMantle = False
         return result
-    else:
-        result =sphericalHarmoAnalysis(x)
-        #if not isMantle:print(">>>>>>>>>>>>>>>>>>Going from OC to Mantle: Pos:",toSpherical(x)," Value:",toSpherical(result))
-        #print("Mantle")
-        isMantle = True
-        isOuterCore = False         
-        return result
+    else:"""
+    result = sphericalHarmoAnalysis(x)
+    #if not isMantle:print(">>>>>>>>>>>>>>>>>>Going from OC to Mantle: Pos:",toSpherical(x)," Value:",toSpherical(result))
+    #print("Mantle")
+    isMantle = True
+    isOuterCore = False         
+    return result
 
 def useIGRFonly():
     gRE = gIGRF
@@ -108,16 +108,25 @@ def sphericalHarmoAnalysis(x):
     #print("Pos Spherical: "+ str(v._x)+","+str(v._y)+","+str(v._z))
     result=Point3D(0,0,0)
 
-    """Get Gaus Coef respective to radius"""  
+    """Get Gaus Coef respective to radius""" 
+    degree=40
     g,h = getGaussCoef(v._z)
-    
-    for l in range(1,n):
+    Lp = SN_Legendre(math.cos(v._x),degree)
+    dLp = deltaSN_Legendre(Lp,degree)
+    """for l in range(1,n):
         for m in range(l+1):
     #m = 1
     #l = 1
             result._x+= -((ar/v._z)**(l +2))*(-math.sin(v._x))*deltaSN(m,l,math.cos(v._x))*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
             result._y+= -(ar/(v._z))**(l +2)*SN(m,l,cos(v._x))*(-g[l][m]*m*math.sin(m*v._y)+h[l][m]*m*math.cos(m*v._y))
             result._z+= (l +1)*((ar/v._z)**(l +2))*SN(m,l,cos(v._x))*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
+    """
+    """Using implicit Legendre"""
+    for l in range(1,degree):
+        for m in range(l+1):
+            result._x+= -((ar/v._z)**(l +2))*(-math.sin(v._x))*dLp[l][m]*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
+            result._y+= -(ar/(v._z))**(l +2)*Lp[l][m]*(-g[l][m]*m*math.sin(m*v._y)+h[l][m]*m*math.cos(m*v._y))
+            result._z+= (l +1)*((ar/v._z)**(l +2))*Lp[l][m]*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
 
     """    for l in range(1,n+1):
         for m in range(l+1):
@@ -143,7 +152,59 @@ def deltaSN(m,l,x):
     if(deltaLegendre(m,l,x)==0): print("is Zero error")
     return ((-1)**m)*math.sqrt(2.0*math.factorial(l-m)/math.factorial(l+m))*deltaLegendre(m,l,x)
 
+def p(m,l,x):
+    """Legendre Poynomial Basis"""
+    if m==0 and l==0 :
+        return 1.0
+    elif m==0 and l==1:
+        return cos(x)
+    else:
+        return p(0,l-1,x) * float(2*l-1)/float(l) * cos(x)- p(0,l-2,x) * float(l-1)/float(l)
 
+def SN_Legendre(x,degree):
+    """Schmid Normalized Legendrefunction
+       returns a 2D Array with evaluated Legendre functions at position x
+       use as L(m,l,x) = p_sn[m,l]""" 
+    p_sn=[[0 for xl in range(degree)]*degree for xl in range(degree)]
+    """Normalization"""
+    df=[1.0 for xl in range(degree+1)]    
+    for m in range(1,degree):   
+        #df.insert(m,1.0)
+        for k in range(1,m):
+            df[m]=df[m] * float(2*k-1) / float(2*k)
+        df[m+1] = sqrt( 2.0 * df[m] * float(2*m+1) ) * cos(x)
+        df[m] = sqrt(2.0*df[m])
+        
+        if( m < degree-1):
+            for l in range(m+2,degree):
+                df[l]=( cos(x) * float(2*l-1) * df[l-1] - sqrt( float( (l-1)*(l-1) - m*m )) * df[l-2] ) / sqrt( float( l*l - m*m ))
+        
+        for l in range(m,degree):
+            p_sn[m][l]=df[l] * sin(x)**m
+    return p_sn
+
+def deltaSN_Legendre(p_sn,degree):
+   """Schmid Normalized Legendrefunction
+   returns a 2D Array with evaluated Legendre functions at position x
+   use as L(m,l,x) = p_sn[m,l]""" 
+   dp_sn=[[0 for xl in range(degree)]*degree for xl in range(degree)]
+   """Normalization"""
+   dp_sn[0][0] = 0.0
+   for l in range(1,degree):
+       dp_sn[0][l] = - sqrt( float(l*(l+1)/2) ) * p_sn[1][l]
+   dp_sn[1][1]=p_sn[0][1]
+
+   if degree < 2: return dp_sn
+   for l in range(2,degree):
+       dp_sn[1][l]= 0.5 * ( sqrt( float( 2*l*(l+1) ) ) * p_sn[0][l] - sqrt( float((l-1)*(l+2)) ) * p_sn[2][l] )
+       dp_sn[l][l]= 0.5 * sqrt(float(2*l))*p_sn[l-1][l]
+   if degree <3: return dp_sn
+   for l in range(3,degree):
+       for m in range(2,l-1):
+           dp_sn[m][l] = 0.5* ( sqrt( float( (l+m)*(l-m+1) ) ) *p_sn[m-1][l] - sqrt( float( (l-m)*(l+m+1) ) ) *p_sn[m+1][l] )
+   return dp_sn
+   
+   
 #Legendre Functions till degree 4
 def Legendre(m,l,x):
     if l==1 and m==0:
@@ -449,13 +510,13 @@ def loadGaussCoefSimu(filenameRE,filenameICB):
                 ##we only use Coefs until the degree of 5
                 m = 0
                 row = 2                
-                for k in range(0,6):                    
+                for k in range(0,85):                    
                     for i in range (0,m+1):
                         #print("g",n,i,entries[row])
                         gRE[m][i]=entries[row]
                         row +=1                        
                     m +=1
-                    if(k<5):
+                    if(k<84):
                         for q in range(m,0,-1):
                             #print("h",n,q,entries[row])
                             hRE[m][q]=entries[row]

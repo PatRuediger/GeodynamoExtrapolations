@@ -31,7 +31,7 @@ def test_Dipol_VF():
     Vis.setVectorfield(xf,vf)
     return
 
-def testRK_Dipol_SL(theta,phi,r,direction,tmax=1.0e+10,t0=0.8e-3,max_steps=10000):
+def testRK_Dipol_SL(theta,phi,r,direction,tmax=1.0e+10,t0=0.8e-3,max_steps=1000):
     loadGaussCoefSimu("../../Gauss_RE.dat","../../Gauss_ICB.dat")
     #data = ds.AvsUcdAscii()
     #data.loadFile('E:/Uni/GeodynamicsProject/Datasets/out.1550.inp')
@@ -48,22 +48,24 @@ def testRK_Dipol_SL(theta,phi,r,direction,tmax=1.0e+10,t0=0.8e-3,max_steps=10000
     print("Start new Streamline with:", tpr0,toSphericalVecfield(tpr0,v0),direction)
     #print(tpr0,toSphericalVecfield(tpr0,v0))
     i= 0 
+    dtmax = 100.0
     while (max_steps>i) and (t<tmax):
        # print(((t-t0)*100.0)/(tmax-t0),"% finished ..... ")
-        if(((toSpherical(nextPos)._z)<1.538461538462E+0)):
+        if(((toSpherical(nextPos)._z)<1.6)):
             print("inner core reached",toSpherical(nextPos))
             #xf,vf,t2,xf2,vf2,tf2 = rk4(nextPos,nextVal,data.getValue,t,t0,direction)
             break
-        #print("next pos spherical :",toSpherical(nextPos));
+        #print("next pos spherical :",toSpherical(nextPos))
         else:
             xf,vf,t2,xf2,vf2,tf2 = rk4(nextPos,nextVal,evalSHA,t,t0,direction)
         """adapt stepsize"""
-        needAdapt= adaptStep(xf,vf,xf2,vf2,t0)[0]
+        needAdapt= adaptStep(vf,vf2,t0)[0]
         while needAdapt:
-            needAdapt, t0 = adaptStep(xf,vf,xf2,vf2,t0)
-            if(((toSpherical(nextPos)._z)<1.538461538462E+0)):
-                xf,vf,t2,xf2,vf2,tf2 = rk4(xf,vf,data.getValue,t,t0,direction)
-            #break
+            needAdapt, t0 = adaptStep(vf,vf2,t0)
+            #print("timestep after adapt",t0)
+            if(t0>dtmax):         
+                t0=dtmax
+                needAdapt = False
         #print("next pos spherical :",toSpherical(nextPos));
             else:
                 xf,vf,t2,xf2,vf2,tf2 = rk4(xf,vf,evalSHA,t,t0,direction)
@@ -73,12 +75,65 @@ def testRK_Dipol_SL(theta,phi,r,direction,tmax=1.0e+10,t0=0.8e-3,max_steps=10000
         sl.append(xf)
         vl.append(vf)
         #print("step #",i,toSpherical(xf), vf,t)
+        if(i%10)==0:print("step #",i,toSpherical(xf), vf,t)
         i+=1
     print("i",i,"sl[i-1]",toSpherical(sl[i-1]),"vl[i-1]",toSphericalVecfield(toSpherical(sl[-1]),vl[i-1]))
     Vis.addStreamLine(sl,vl)
     return
+   
+def test_OC_only(theta,phi,r,direction,data,tmax=1.0e+10,t0=0.8e-5,max_steps=5000):
+    sph.setData(data)
+    sl=[]
+    vl=[]
+    t=t0
+    tpr0 = ds.Point3D(theta, phi,r)
+    xyz0 = toCartesian(tpr0)
+    v0 = evalSHA(xyz0, None)
+    sl.append(xyz0)
+    vl.append(v0)
+    nextVal=v0
+    nextPos=xyz0
+    max_step=4.0e-5
+    print("Start new Streamline with:", tpr0,toSphericalVecfield(tpr0,v0),direction)
+    #print(tpr0,toSphericalVecfield(tpr0,v0))
+    i= 0
+    outOfBounds = False
+    while (max_steps>i) and (t<tmax) and  (not outOfBounds):
+        xf,vf,t2,xf2,vf2,tf2 = rk4(nextPos,nextVal,evalSHA,t,t0,direction)
+        if(((toSpherical(xf)._z)>=1.537983852128)):
+            outOfBounds = True
+            break
+        dtmax=data._currentCell.gridSize()/2.0
+        if(t0>dtmax):           
+            t0=dtmax
+        needAdapt= adaptStep(vf,vf2,t0)[0]
+        while needAdapt:
+            needAdapt, t0 = adaptStep(vf,vf2,t0)
+            if(t0>dtmax):         
+                t0=dtmax
+                needAdapt = False                    
+            xf,vf,t2,xf2,vf2,tf2 = rk4(xf,vf,evalSHA,t,t0,direction)
+            if(((toSpherical(xf)._z)>=1.537983852128)):
+                outOfBounds = True
+                break
+        nextPos = xf
+        nextVal = vf
+        t=t2
+        sl.append(xf)
+        vl.append(vf)
+        if(i%100)==0:print("step #",i,toSpherical(xf), vf,t)
+        i+=1
+    #print("i",i,"sl[i-1]",toSpherical(sl[i-1]),"vl[i-1]",toSphericalVecfield(toSpherical(sl[-1]),vl[i-1]))
+    Vis.addStreamLine(sl,vl)
+    return
     
-def testRK_Whole_SL(theta,phi,r,direction,tmax=1.0e+10,t0=0.8e-3,max_steps=1000):
+def loadData(path):
+    loadGaussCoefSimu("../../Gauss_RE.dat","../../Gauss_ICB.dat")
+    data = ds.VTKData()
+    data.loadFile(path)
+    return data
+    
+def testRK_Whole_SL(theta,phi,r,direction,tmax=1.0e+10,t0=0.8e-4,max_steps=1000):
     loadGaussCoefSimu("../../Gauss_RE.dat","../../Gauss_ICB.dat")
     data = ds.VTKData()
     data.loadFile('C:/out.1200.vtk')
@@ -135,6 +190,7 @@ def project_on_boundary(x,v,r):
     sp = ds.Point3D(sp_t,sp_p,sp_r)
     print("SP with Boundary in Spherical Coords: ", sp,vs)    
     return toCartesian(sp)
+
 
 def testSHA_SL(x,y,z,mx,my,mz):
     #loadGaussCoefIGRF("../GausCoef.txt")
@@ -293,13 +349,21 @@ def perfectDipol(x,dt):
     return vs
     
 def main():
-    testBoundaryVecField()
+    #data = loadData('C:/out.1200.vtk')
+    #Vis.built_cm_rainbow(data)
+    #testBoundaryVecField()
+    testRK_Dipol_SL(0.1,0.5,2.8,"forward")
     """Test of Extrapolation Method """
     #for phi in range(10,2*3141,500):
-       #testRK_Dipol_SL(1.4,phi/1000.0,2.8,"forward")
+        #testRK_Dipol_SL(1.4,phi/1000.0,2.8,"forward")
        # testRK_Dipol_SL(0.3,phi/1000.0,2.3,"forward")
        # testRK_Dipol_SL(0.6,phi/1000.0,2.3,"forward")
-    """Test of whole Streamline Vis"""    
+    """Test of whole Streamline Vis""" 
+    #for phi in range(10,2*3141,600):
+       # test_OC_only(1.4,phi/1000.0,1.1,"forward",data)
+        #test_OC_only(1.4,phi/1000.0,1.1,"backward",data)
+    #tes#t_OC_only(1.4,0.6,0.7,"forward",data)
+    #test_OC_only(1.0,0.6,1.0,"forward",data)
     ##----degenereted case
     #testRK_Whole_SL(1.4,0.6,1.1,"forward")
     ##

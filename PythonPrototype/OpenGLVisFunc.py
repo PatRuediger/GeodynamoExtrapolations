@@ -29,6 +29,7 @@ g_quadratic = None
 
 lmax = []
 
+g_cm_rb = (0.0,0.0)
 g_streamLinePos = []
 g_streamLineValue = []
 
@@ -137,6 +138,26 @@ def Torus(MinorRadius, MajorRadius):
 def Sphere(center,radius):
     return
 
+def built_cm_rainbow(data):
+    le =[]
+    global g_cm_rb
+    verts = data._vertexList
+    for v in verts:
+        le.append(v._mag._length())
+    max_v = max(le)
+    min_v = min(le)
+    g_cm_rb=(max_v,min_v)
+    return
+
+def cm_rainbow(x):
+    i = x/(g_cm_rb[0]-g_cm_rb[1])
+    r = sin(0.3*i + 0)*0.49 + 0.51
+    g = sin(0.3*i + PI2/3.0)*0.49 + 0.51
+    b = sin(0.3*i + 2*PI2/3.0)*0.49 + 0.51
+    #print("Value: ",x , "Color: ", r,g,b)
+    return r,g,b
+    
+    
 def arrowGlyph(pos,value,scale):
     #Normalize the vector
     maxl=max(lmax)
@@ -191,6 +212,10 @@ def drawStreamLines():
     global g_streamLineList
     for sl in g_streamLineList:
         for i in range(len(sl[0])-1):
+            val = sl[1][i]._length()
+#            r,g,b = cm_rainbow(val)
+#            glColor4f(r,g,b,1.0);
+            glColor4f(1.0,0.8,0.1,1.0)
             glBegin( GL_LINES );
             glVertex3f (sl[0][i]._x,sl[0][i]._y,sl[0][i]._z);
             glVertex3f (sl[0][i+1]._x,sl[0][i+1]._y,sl[0][i+1]._z);
@@ -229,10 +254,10 @@ def Draw ():
     glMultMatrixf(g_Transform);										# // NEW: Apply Dynamic Transform
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable( GL_BLEND );
-    glColor4f(0.8,0.1,1.0,1.0);
-    drawVectorfield(g_vecFieldPos,g_vecFieldValue,0.3)
-    glColor4f(0.1,0.8,1.0,1.0);
-    drawVectorfield(g_vecFieldPos2,g_vecFieldValue2,0.3)
+   # glColor4f(0.8,0.1,1.0,1.0);
+    #drawVectorfield(g_vecFieldPos,g_vecFieldValue,0.3)
+    #glColor4f(0.1,0.8,1.0,1.0);
+    #drawVectorfield(g_vecFieldPos2,g_vecFieldValue2,0.3)
     drawStreamLines()
     #streamLine(g_streamLinePos,g_streamLineValue)
     glPopMatrix();													# // NEW: Unapply Dynamic Transform
