@@ -48,7 +48,7 @@ def testRK_Dipol_SL(theta,phi,r,direction,tmax=1.0e+10,t0=0.8e-3,max_steps=1000)
     print("Start new Streamline with:", tpr0,toSphericalVecfield(tpr0,v0),direction)
     #print(tpr0,toSphericalVecfield(tpr0,v0))
     i= 0 
-    dtmax = 100.0
+    dtmax = 5000.0
     while (max_steps>i) and (t<tmax):
        # print(((t-t0)*100.0)/(tmax-t0),"% finished ..... ")
         if(((toSpherical(nextPos)._z)<1.6)):
@@ -75,7 +75,7 @@ def testRK_Dipol_SL(theta,phi,r,direction,tmax=1.0e+10,t0=0.8e-3,max_steps=1000)
         sl.append(xf)
         vl.append(vf)
         #print("step #",i,toSpherical(xf), vf,t)
-        if(i%10)==0:print("step #",i,toSpherical(xf), vf,t)
+        if(i%10)==0:print("step #",i,toSpherical(xf), vf,t0)
         i+=1
     print("i",i,"sl[i-1]",toSpherical(sl[i-1]),"vl[i-1]",toSphericalVecfield(toSpherical(sl[-1]),vl[i-1]))
     Vis.addStreamLine(sl,vl)
@@ -258,13 +258,13 @@ def testBoundaryVecField():
     vf_oc = []
     i=0
     for x_m in xf_mantle:
-        #print("MANTEL>>>Pos:",toSpherical(x_m) )
+        print("MANTEL>>>Pos:",toSpherical(x_m) )
         v = evalSHA(x_m,1.0)
         #print("MANTEL>>>Pos:",x_m ,"Value:",v)
         vf_mantle.append(v)
     for x_oc in xf_oc:
         i+=1
-        #print("OC>>>Pos:",toSpherical(x_oc) )
+        print("OC>>>Pos:",toSpherical(x_oc) )
         v = evalSHA(x_oc,1.0)
         if((i*100.0/len(xf_oc))%10)==0: print("Evaluation reached: " +str(i*100.0/len(xf_oc)) +"%")
         #print("OC>>>Pos:",x_oc ,"Value:",v)
@@ -351,8 +351,8 @@ def perfectDipol(x,dt):
 def main():
     #data = loadData('C:/out.1200.vtk')
     #Vis.built_cm_rainbow(data)
-    #testBoundaryVecField()
-    testRK_Dipol_SL(0.1,0.5,2.8,"forward")
+    testBoundaryVecField()
+    #testRK_Dipol_SL(3.0,0.5,2.8,"forward")
     """Test of Extrapolation Method """
     #for phi in range(10,2*3141,500):
         #testRK_Dipol_SL(1.4,phi/1000.0,2.8,"forward")

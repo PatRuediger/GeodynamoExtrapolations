@@ -36,10 +36,10 @@ plotColor=[]
 n=4
 gIGRF=ndarray((6,6))
 hIGRF=ndarray((6,6))
-gRE=ndarray((90,90))
-hRE=ndarray((90,90))
-gICB=ndarray((90,90))
-hICB=ndarray((90,90))
+gRE=ndarray((96,96))
+hRE=ndarray((96,96))
+gICB=ndarray((96,96))
+hICB=ndarray((96,96))
 #earth radius
 ar= 2.91
 #inner core boundary radius
@@ -61,15 +61,15 @@ def setData(data):
 def evalSHA(x,dt):
     global isOuterCore
     global isMantle            
-    """ if ((toSpherical(x)._z)<=ocb) and ((toSpherical(x)._z)>icb):
+    if ((toSpherical(x)._z)<=ocb) and ((toSpherical(x)._z)>icb):
         result = g_data.getValue(x,dt) 
         #if not isOuterCore:print(">>>>>>>>>>>>>>>>>>Going from Mantle to OC: Pos:",toSpherical(x)," Value:",toSpherical(result))
         #print("OC")
         isOuterCore = True
         isMantle = False
         return result
-    else:"""
-    result = sphericalHarmoAnalysis(x)
+    else:
+        result = sphericalHarmoAnalysis(x)
     #if not isMantle:print(">>>>>>>>>>>>>>>>>>Going from OC to Mantle: Pos:",toSpherical(x)," Value:",toSpherical(result))
     #print("Mantle")
     isMantle = True
@@ -86,7 +86,7 @@ def useIGRFonly():
 def getGaussCoef(radius):
     
     """IGRF only for testing pruposes"""
-    if (radius>ocb):
+    if (radius>=ocb):
        # print("RE used",radius)
         return gRE,hRE
     elif (radius <=icb):
@@ -109,7 +109,7 @@ def sphericalHarmoAnalysis(x):
     result=Point3D(0,0,0)
 
     """Get Gaus Coef respective to radius""" 
-    degree=40
+    degree=95
     g,h = getGaussCoef(v._z)
     Lp = SN_Legendre(math.cos(v._x),degree)
     dLp = deltaSN_Legendre(Lp,degree)
@@ -510,13 +510,13 @@ def loadGaussCoefSimu(filenameRE,filenameICB):
                 ##we only use Coefs until the degree of 5
                 m = 0
                 row = 2                
-                for k in range(0,85):                    
+                for k in range(0,95):                    
                     for i in range (0,m+1):
                         #print("g",n,i,entries[row])
                         gRE[m][i]=entries[row]
                         row +=1                        
                     m +=1
-                    if(k<84):
+                    if(k<95):
                         for q in range(m,0,-1):
                             #print("h",n,q,entries[row])
                             hRE[m][q]=entries[row]
@@ -540,13 +540,13 @@ def loadGaussCoefSimu(filenameRE,filenameICB):
                 ##we only use Coefs until the degree of 5
                 m = 0
                 row = 2
-                for k in range(1,6):
+                for k in range(1,95):
                     for i in range (0,m+1):
                         #print("g",n,i,entries[row])
                         gICB[m][i]=entries[row]
                         row +=1
                     m +=1
-                    if(k<5):
+                    if(k<95):
                         for q in range(m,0,-1):
                             #print("h",n,q,entries[row])
                             hICB[m][q]=entries[row]
