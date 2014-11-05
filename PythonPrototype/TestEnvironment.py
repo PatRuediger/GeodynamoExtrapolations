@@ -278,7 +278,38 @@ def testBoundaryVecField():
     Vis.setVectorfield(xf_mantle,vf_mantle)
     Vis.setVectorfield2(xf_oc,vf_oc)
     return    
+
+def DS_compared_Vecfield():
+    loadGaussCoefSimu("../../Gauss_RE.dat","../../Gauss_ICB.dat")
+    data = ds.VTKData()
+    data.loadFile('C:/out.1200.vtk')
+    data.builtKDTree()
+    sph.setData(data)
+    
+    xf_oc = []
+    for theta in range(10,2*3141,315):
+        for phi in range(10,3141,158):
+            tpr_oc = ds.Point3D(theta/1000.0, phi/1000.0, 1.537983852128 - 1.0e-3)
+            xyz_oc = toCartesian(tpr_oc)
+            xf_oc.append(xyz_oc)
+    vf_oc_kd = []
+    vf_oc_bf = []
+    i=0
+    for x_oc in xf_oc:
+        i+=1
+        #print("OC>>>Pos:",toSpherical(x_oc) )
+        v_bf = data.getValue(x_oc,1.0)
+        v_kd = data.getValueKDTree(x_oc,1.0)
         
+        if((i*100.0/len(xf_oc))%10)==0: print("Evaluation reached: " +str(i*100.0/len(xf_oc)) +"%")
+       # print("OC>>>Pos:",x_oc ,"Value:",v)
+        vf_oc_bf.append(v_bf)
+        vf_oc_kd.append(v_kd)
+    #xf = xf_mantle + xf_oc
+    #vf = vf_mantle + vf_oc    
+    Vis.setVectorfield(xf_oc,vf_oc_bf)    #purple
+    Vis.setVectorfield2(xf_oc,vf_oc_kd)   #light blue
+    return        
 
 def testSHAwithVecfield():
     loadGaussCoefIGRF("../GausCoef.txt")
@@ -352,12 +383,12 @@ def perfectDipol(x,dt):
     vs = ds.Point3D(x_dipol,y_dipol,z_dipol)
     return vs
  
-def GridTestVis():
+def GridTestVis(num_Cells):
     data = ds.VTKData()
     data.loadFile('C:/out.1200.vtk')
     #Vis.initVertexBuffer(data._vertexList)
     Vis.setCellList(data._cellList)
-    for i in range(1,len(data._cellList),len(data._cellList)/20):
+    for i in range(1,len(data._cellList),len(data._cellList)/num_Cells):
         verts=[]
         for ver in data._cellList[i]._verts:
             verts.append(ver._ID)
@@ -366,8 +397,9 @@ def GridTestVis():
 def main():
     #data = loadData('C:/out.1200.vtk')
     #Vis.built_cm_rainbow(data)
-    #GridTestVis()
-    testBoundaryVecField()
+    #GridTestVis(5000)                              ##define number of Cells to be visible
+    DS_compared_Vecfield()
+    #testBoundaryVecField()
     #testRK_Dipol_SL(3.0,0.5,2.8,"forward")
     """Test of Extrapolation Method """
     #for phi in range(10,2*3141,500):
