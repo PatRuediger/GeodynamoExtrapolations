@@ -17,37 +17,31 @@ Data structure for Visualization
 Using hexahedron Grid cells with 8 vertices
 """
 import math
-
+from scipy.spatial import KDTree
+from datetime import datetime
+import timeit
 
 def mainTest():
     print('Main startet')
     DS = VTKData()
     DS.loadFile('C:/out.1200.vtk')
-    x = []
-    y = []
-    z = []
-    xv = []
-    zv=[]
-    yv=[]
-    for v in DS._vertexList :
-        x.append(v._pos._x)
-        y.append(v._pos._y)
-        z.append(v._pos._z)
-        xv.append(v._mag._x)
-        yv.append(v._mag._y)
-        zv.append(v._mag._z)
-    print(max(x),max(y),max(z))
-    print(min(x),min(y),min(z))
-    print(max(xv),max(yv),max(zv))
-    #output=[]
-    #x = Point3D(0.264639452897,0.0265525127273,0.859802840213)
-    #output.append(DS.getValue(x,1.0))
-    #for i in range(1000,11000,1000):
-      #  x1 = x.mult(1.0 - i*4.0e-6)
-        #print(x1)
-        #output.append(DS.getValue(x1,1.0))
-    #print("Interpolated Value",output)    
-    
+    DS.builtKDTree()
+    x = Point3D(0.5,0.4,0.75)
+    tstart = datetime.now()
+    bf = DS.getValue(x,1.0)
+    tend = datetime.now()
+    delta = tend -tstart
+    #print("Search time for Brute Force",  dt)
+    print(bf)
+    print("Search time for Brute Force",  int(delta.total_seconds() * 1000))
+    tstart = datetime.now()
+    kdv = DS.getValueKDTree(x,1.0)
+    tend = datetime.now()
+    delta = tend -tstart
+    print(kdv)
+    print("Search time for KD Tree", int(delta.total_seconds() * 1000))
+
+
 
 def testInterpolation():
     v0 = Vertex(0,Point3D(0,0,0),Point3D(0,0,1))
@@ -201,6 +195,7 @@ class Cell:
     ## @output is a Point3D
     def trilinear(self,x):
         if(self.isInside(x)):
+            #print(self._ID)
             x0=self._verts[0]._pos[0]
             x1=self._verts[3]._pos[0]
             y0=self._verts[0]._pos[1]
@@ -275,12 +270,34 @@ class VTKData:
     _vertexList =[]
     _cellList =[]
     _valueNames =[]
+    _kdTree = None
 
 #---class Methods
     # Constructor method
     def __init__(self):
           return
            
+    
+    def builtKDTree(self):
+        vertexListTripples = []
+        ## List Index is the same as in _vertexList
+        for elem in self._vertexList:
+            vertexListTripples.append((elem._pos._x,elem._pos._y,elem._pos._z))
+        self._kdTree = KDTree(vertexListTripples)
+
+    def getValueKDTree(self,x,dt):
+        xtupple = (x._x,x._y,x._z)
+        d,ni = self._kdTree.query(xtupple) ## return the indices of the nearest neigbhour, d and ni are arrays
+        nnVertex = self._vertexList[ni]
+        for neighbourID in nnVertex._partOfCell:
+            self._currentCell = self._cellList[neighbourID-1]
+            isFound,intPoint, nextCell = self._currentCell.trilinear(x)
+            if(isFound): 
+                return intPoint
+        print("Cell not Found",x)        
+        
+                
+        
     ## returns the interpolated value at position x
     def getValue(self,x,dt):
      #   print("Search for Cell with point: ", toSpherical(x))
@@ -293,7 +310,8 @@ class VTKData:
             for neighbourID in ver._partOfCell:
                 neighbour = self._cellList[neighbourID-1]
                 isFound,intPoint,self._currentCell = neighbour.trilinear(x)
-                if(isFound): 
+                if(isFound):
+                    #print("Celllist of Brute Force",ver._partOfCell)
                     return intPoint
        #if not found in neighbouring cell - should only be the case, for the first time reaching the outer core
         for cell in self._cellList:
@@ -378,7 +396,7 @@ class VTKData:
                #     print('read'+str(ver_counter)+'Vertex')
                 elif isCell and entries[0]!="CELLS":                 
                     cell_counter+=1
-                    currentCell = Cell(cell_counter,self._vertexList[int(entries[0])-1],self._vertexList[int(entries[1])-1],self._vertexList[int(entries[2])-1],self._vertexList[int(entries[3])-1],self._vertexList[int(entries[4])-1],self._vertexList[int(entries[5])-1],self._vertexList[int(entries[6])-1],self._vertexList[int(entries[7])-1])
+                    currentCell = Cell(cell_counter,self._vertexList[int(entries[1])-1],self._vertexList[int(entries[2])-1],self._vertexList[int(entries[3])-1],self._vertexList[int(entries[4])-1],self._vertexList[int(entries[5])-1],self._vertexList[int(entries[6])-1],self._vertexList[int(entries[7])-1],self._vertexList[int(entries[8])-1])
                     self._cellList.append(currentCell)
                     ##add link from vertex to cell
                     for ki in range(0,8,1):
@@ -421,11 +439,11 @@ class VTKData:
                 print('Cell topology computition reached: ' + str(cellcount*100.0/self._numCells) + '%')
                 print("NeighbourList for Cell :", cell._ID,len(cell._neighbours))
         #free memory and delete partofCell list
-        li_length=[]
-        for vertex in self._vertexList:
-            li_length.append(len(vertex._partOfCell))    
-            del(vertex._partOfCell[:])
-        print(max(li_length))
+        #li_length=[]
+        #for vertex in self._vertexList:
+         #   li_length.append(len(vertex._partOfCell))    
+          #  del(vertex._partOfCell[:])
+        #print(max(li_length))
 
     
 

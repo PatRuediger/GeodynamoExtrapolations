@@ -6,6 +6,10 @@ from OpenGL.GLU import *
 import sys
 import copy
 from math import cos, sin
+from sklearn.externals.joblib import Parallel, delayed
+import multiprocessing
+import buffers
+import numpy
 
 from ArcBall import * 				# ArcBallT 
 
@@ -39,6 +43,9 @@ g_vecFieldPos2 = []
 g_vecFieldValue2 = []
 
 g_streamLineList = []
+g_cellList = []
+g_VertexBuffer = None
+g_CellBuffer = None
 
 
 # A general OpenGL initialization function.  Sets all of the initial parameters. 
@@ -64,9 +71,15 @@ def Initialize (Width, Height):				# We call this right after our OpenGL window 
 
 	return True
 
-
-
-
+def initVertexBuffer(vertexList):
+    global g_VertexBuffer
+    vertexListTripples = []
+    ## List Index is the same as in _vertexList
+    for elem in vertexList:
+        vertexListTripples.append([elem._pos._x,elem._pos._y,elem._pos._z])
+    numpy_verts = numpy.array(vertexListTripples,dtype=numpy.float32)
+    g_VertexBuffer = vertexBuffer(numpy_verts,GL_STATIC_DRAW)
+      
 def Upon_Drag (cursor_x, cursor_y):
 	""" Mouse cursor is moving
 		Glut calls this function (when mouse button is down)
@@ -161,6 +174,8 @@ def cm_rainbow(x):
 def arrowGlyph(pos,value,scale):
     #Normalize the vector
     maxl=max(lmax)
+    if value == None:
+        return
     value_n = Point3D(value._x/value._length(),value._y/value._length(),value._z/value._length())
     glPointSize( 5.0 );
     glBegin(GL_POINTS);
@@ -221,7 +236,97 @@ def drawStreamLines():
             glVertex3f (sl[0][i+1]._x,sl[0][i+1]._y,sl[0][i+1]._z);
             glEnd();
     return
-            
+
+def setCellList(cellList):
+    global g_cellList
+    g_cellList = cellList
+
+def drawSingleWire(cell):
+    #print("Drawing cell with id: ", cell._ID)
+    glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+    glColor4f(1.0,1.0,1.0,0.9)
+    glBegin(GL_QUADS);
+    glVertex3f(cell._verts[0]._pos._x,cell._verts[0]._pos._y,cell._verts[0]._pos._z)
+    glVertex3f(cell._verts[1]._pos._x,cell._verts[1]._pos._y,cell._verts[1]._pos._z)
+    glVertex3f(cell._verts[2]._pos._x,cell._verts[2]._pos._y,cell._verts[2]._pos._z)
+    glVertex3f(cell._verts[3]._pos._x,cell._verts[3]._pos._y,cell._verts[3]._pos._z)
+    glEnd();    
+    glBegin(GL_QUADS);
+    glVertex3f(cell._verts[5]._pos._x,cell._verts[5]._pos._y,cell._verts[5]._pos._z)
+    glVertex3f(cell._verts[1]._pos._x,cell._verts[1]._pos._y,cell._verts[1]._pos._z)
+    glVertex3f(cell._verts[0]._pos._x,cell._verts[0]._pos._y,cell._verts[0]._pos._z)
+    glVertex3f(cell._verts[4]._pos._x,cell._verts[4]._pos._y,cell._verts[4]._pos._z)
+    glEnd();
+    glBegin(GL_QUADS);
+    glVertex3f(cell._verts[6]._pos._x,cell._verts[6]._pos._y,cell._verts[6]._pos._z)
+    glVertex3f(cell._verts[7]._pos._x,cell._verts[7]._pos._y,cell._verts[7]._pos._z)
+    glVertex3f(cell._verts[4]._pos._x,cell._verts[4]._pos._y,cell._verts[4]._pos._z)
+    glVertex3f(cell._verts[5]._pos._x,cell._verts[5]._pos._y,cell._verts[5]._pos._z)
+    glEnd();
+    glBegin(GL_QUADS);
+    glVertex3f(cell._verts[2]._pos._x,cell._verts[2]._pos._y,cell._verts[2]._pos._z)
+    glVertex3f(cell._verts[6]._pos._x,cell._verts[6]._pos._y,cell._verts[6]._pos._z)
+    glVertex3f(cell._verts[7]._pos._x,cell._verts[7]._pos._y,cell._verts[7]._pos._z)
+    glVertex3f(cell._verts[3]._pos._x,cell._verts[3]._pos._y,cell._verts[3]._pos._z)
+    glEnd();
+    glBegin(GL_QUADS);
+    glVertex3f(cell._verts[1]._pos._x,cell._verts[1]._pos._y,cell._verts[1]._pos._z)
+    glVertex3f(cell._verts[5]._pos._x,cell._verts[5]._pos._y,cell._verts[5]._pos._z)
+    glVertex3f(cell._verts[6]._pos._x,cell._verts[6]._pos._y,cell._verts[6]._pos._z)
+    glVertex3f(cell._verts[2]._pos._x,cell._verts[2]._pos._y,cell._verts[2]._pos._z)
+    glEnd();
+    glBegin(GL_QUADS);
+    glVertex3f(cell._verts[0]._pos._x,cell._verts[0]._pos._y,cell._verts[0]._pos._z)
+    glVertex3f(cell._verts[3]._pos._x,cell._verts[3]._pos._y,cell._verts[3]._pos._z)
+    glVertex3f(cell._verts[7]._pos._x,cell._verts[7]._pos._y,cell._verts[7]._pos._z)
+    glVertex3f(cell._verts[4]._pos._x,cell._verts[4]._pos._y,cell._verts[4]._pos._z)
+    glEnd();
+
+
+def drawWireFrame():
+    global g_cellList
+    glLineWidth(0.1)
+   # print("Drawing Wireframe")
+    for i in range (100,len(g_cellList),len(g_cellList)/5000):
+        drawSingleWire(g_cellList[i])
+    #num_cores = multiprocessing.cpu_count()
+    #Parallel(n_jobs=num_cores)(delayed(drawSingleWire)(cell) for cell in g_cellList)
+"""    for cell in g_cellList:
+        print("Drawing cell with id: ", cell._ID)
+        glColor4f(1.0,0.1,0.1,1.0)
+        glBegin(GL_LINES);
+        glVertex3f(cell._verts[0]._pos._x,cell._verts[0]._pos._y,cell._verts[0]._pos._z)
+        glVertex3f(cell._verts[1]._pos._x,cell._verts[1]._pos._y,cell._verts[1]._pos._z)
+        glEnd();    
+        glBegin(GL_LINES);
+        glVertex3f(cell._verts[0]._pos._x,cell._verts[0]._pos._y,cell._verts[0]._pos._z)
+        glVertex3f(cell._verts[3]._pos._x,cell._verts[3]._pos._y,cell._verts[3]._pos._z)
+        glEnd();
+        glBegin(GL_LINES);
+        glVertex3f(cell._verts[0]._pos._x,cell._verts[0]._pos._y,cell._verts[0]._pos._z)
+        glVertex3f(cell._verts[4]._pos._x,cell._verts[4]._pos._y,cell._verts[4]._pos._z)
+        glEnd();
+        glBegin(GL_LINES);
+        glVertex3f(cell._verts[1]._pos._x,cell._verts[1]._pos._y,cell._verts[1]._pos._z)
+        glVertex3f(cell._verts[5]._pos._x,cell._verts[5]._pos._y,cell._verts[5]._pos._z)
+        glEnd();
+        glBegin(GL_LINES);
+        glVertex3f(cell._verts[1]._pos._x,cell._verts[1]._pos._y,cell._verts[1]._pos._z)
+        glVertex3f(cell._verts[2]._pos._x,cell._verts[2]._pos._y,cell._verts[2]._pos._z)
+        glEnd();
+        glBegin(GL_LINES);
+        glVertex3f(cell._verts[3]._pos._x,cell._verts[3]._pos._y,cell._verts[3]._pos._z)
+        glVertex3f(cell._verts[2]._pos._x,cell._verts[2]._pos._y,cell._verts[2]._pos._z)
+        glEnd();
+        glBegin(GL_LINES);
+        glVertex3f(cell._verts[3]._pos._x,cell._verts[3]._pos._y,cell._verts[3]._pos._z)
+        glVertex3f(cell._verts[7]._pos._x,cell._verts[7]._pos._y,cell._verts[7]._pos._z)
+        glEnd();
+        glBegin(GL_LINES);
+        glVertex3f(cell._verts[2]._pos._x,cell._verts[2]._pos._y,cell._verts[2]._pos._z)
+        glVertex3f(cell._verts[6]._pos._x,cell._verts[6]._pos._y,cell._verts[6]._pos._z)
+        glEnd();"""
+         
 def setVectorfield(xf,vf):
     global g_vecFieldPos
     g_vecFieldPos = xf
@@ -230,7 +335,8 @@ def setVectorfield(xf,vf):
     global lmax
     le =[]
     for v in vf:
-        le.append(v._length())
+        if v != None:
+            le.append(v._length())
     lmax.append(max(le))
     return
     
@@ -242,7 +348,8 @@ def setVectorfield2(xf,vf):
     global lmax2
     le =[]
     for v in vf:
-        le.append(v._length())
+        if v != None:
+            le.append(v._length())
     lmax.append(max(le))
     return
 
@@ -260,6 +367,7 @@ def Draw ():
     drawVectorfield(g_vecFieldPos2,g_vecFieldValue2,0.3)
     glColor4f(1.0,0.1,0.1,1.0)
     drawStreamLines()
+    #drawWireFrame()
     #streamLine(g_streamLinePos,g_streamLineValue)
     glPopMatrix();													# // NEW: Unapply Dynamic Transform
     
@@ -295,3 +403,4 @@ def Draw ():
     glutSwapBuffers()
     return
 
+    

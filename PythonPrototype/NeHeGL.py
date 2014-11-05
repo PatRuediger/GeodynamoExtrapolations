@@ -12,6 +12,7 @@ from OpenGL.GLUT import *
 from OpenGL.GLU import *
 from OpenGL.GLUT.freeglut import*
 import sys
+import math
 
 from OpenGLVisFunc import *		# Draw (), Initialize () and all the real OpenGL work.
 from ArcBall import *		# // *NEW* ArcBall header
@@ -81,9 +82,9 @@ def ReSizeGLScene(Width, Height):
 def mouseWheel(button,  direction ,  x,  y):
     global g_zoomfactor
     if (direction > 0): #zoom in
-        g_zoomfactor= g_zoomfactor-10.0
+        g_zoomfactor= g_zoomfactor*0.8
     elif (direction < 0):   #zoom out
-        g_zoomfactor=g_zoomfactor+10.0
+        g_zoomfactor=g_zoomfactor*1.2
     ReSizeGLScene(g_Width,g_Height)
     return
 

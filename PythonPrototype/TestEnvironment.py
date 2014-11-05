@@ -8,6 +8,7 @@ from sphericalharmo import *
 import sphericalharmo as sph
 import datastructure2 as ds
 
+
 def dipol_vf():
     return    
 
@@ -243,13 +244,15 @@ def testBoundaryVecField():
     loadGaussCoefSimu("../../Gauss_RE.dat","../../Gauss_ICB.dat")
     data = ds.VTKData()
     data.loadFile('C:/out.1200.vtk')
+    data.builtKDTree()
     sph.setData(data)
+    
     xf_mantle=[]
     xf_oc = []
     for theta in range(10,2*3141,315):
         for phi in range(10,3141,158):
-            tpr_m = ds.Point3D(theta/1000.0, phi/1000.0, 1.537983852128 + 1.0e-5)
-            tpr_oc = ds.Point3D(theta/1000.0, phi/1000.0, 1.537983852128 - 1.0e-5)
+            tpr_m = ds.Point3D(theta/1000.0, phi/1000.0, 1.537983852128 + 1.0e-4)
+            tpr_oc = ds.Point3D(theta/1000.0, phi/1000.0, 1.537983852128 - 1.0e-4)
             xyz_m = toCartesian(tpr_m)
             xyz_oc = toCartesian(tpr_oc)
             xf_mantle.append(xyz_m)
@@ -257,18 +260,19 @@ def testBoundaryVecField():
     vf_mantle = []
     vf_oc = []
     i=0
+    for x_oc in xf_oc:
+        i+=1
+        #print("OC>>>Pos:",toSpherical(x_oc) )
+        v = data.getValueKDTree(x_oc,1.0)
+        if((i*100.0/len(xf_oc))%10)==0: print("Evaluation reached: " +str(i*100.0/len(xf_oc)) +"%")
+       # print("OC>>>Pos:",x_oc ,"Value:",v)
+        vf_oc.append(v)
+        
     for x_m in xf_mantle:
-        print("MANTEL>>>Pos:",toSpherical(x_m) )
+        #print("MANTEL>>>Pos:",toSpherical(x_m) )
         v = evalSHA(x_m,1.0)
         #print("MANTEL>>>Pos:",x_m ,"Value:",v)
         vf_mantle.append(v)
-    for x_oc in xf_oc:
-        i+=1
-        print("OC>>>Pos:",toSpherical(x_oc) )
-        v = evalSHA(x_oc,1.0)
-        if((i*100.0/len(xf_oc))%10)==0: print("Evaluation reached: " +str(i*100.0/len(xf_oc)) +"%")
-        #print("OC>>>Pos:",x_oc ,"Value:",v)
-        vf_oc.append(v)
     #xf = xf_mantle + xf_oc
     #vf = vf_mantle + vf_oc    
     Vis.setVectorfield(xf_mantle,vf_mantle)
@@ -347,10 +351,22 @@ def perfectDipol(x,dt):
     z_dipol = c*(3.0*x._z*m - force*xs._z**2)
     vs = ds.Point3D(x_dipol,y_dipol,z_dipol)
     return vs
-    
+ 
+def GridTestVis():
+    data = ds.VTKData()
+    data.loadFile('C:/out.1200.vtk')
+    #Vis.initVertexBuffer(data._vertexList)
+    Vis.setCellList(data._cellList)
+    for i in range(1,len(data._cellList),len(data._cellList)/20):
+        verts=[]
+        for ver in data._cellList[i]._verts:
+            verts.append(ver._ID)
+        print(verts)
+   
 def main():
     #data = loadData('C:/out.1200.vtk')
     #Vis.built_cm_rainbow(data)
+    #GridTestVis()
     testBoundaryVecField()
     #testRK_Dipol_SL(3.0,0.5,2.8,"forward")
     """Test of Extrapolation Method """
