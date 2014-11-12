@@ -228,8 +228,8 @@ def drawStreamLines():
     for sl in g_streamLineList:
         for i in range(len(sl[0])-1):
             val = sl[1][i]._length()
-#            r,g,b = cm_rainbow(val)
-#            glColor4f(r,g,b,1.0);
+            r,g,b = cm_rainbow(val)
+            glColor4f(r,g,b,1.0);
             glColor4f(1.0,0.1,0.1,1.0)
             glBegin( GL_LINES );
             glVertex3f (sl[0][i]._x,sl[0][i]._y,sl[0][i]._z);
@@ -366,8 +366,8 @@ def Draw ():
     glColor4f(0.1,0.8,1.0,1.0);
     drawVectorfield(g_vecFieldPos2,g_vecFieldValue2,0.3)
     glColor4f(1.0,0.1,0.1,1.0)
-    drawStreamLines()
-    #drawWireFrame()
+   # drawStreamLines()
+#    drawWireFrame()
     #streamLine(g_streamLinePos,g_streamLineValue)
     glPopMatrix();													# // NEW: Unapply Dynamic Transform
     

@@ -279,6 +279,7 @@ class VTKData:
            
     
     def builtKDTree(self):
+        print("Built KD- Tree ... ")
         vertexListTripples = []
         ## List Index is the same as in _vertexList
         for elem in self._vertexList:
@@ -295,7 +296,61 @@ class VTKData:
             if(isFound): 
                 return intPoint
         print("Cell not Found",x)        
+ 
+    def trilinearInterpolation(self,verts,x):
+        ##trilinear interpolation of x with lexikographically ordered input array verts
+        x0=verts[0]._pos[0]
+        x1=verts[4]._pos[0]
+        y0=verts[0]._pos[1]
+        y1=verts[3]._pos[1]
+        z0=verts[0]._pos[2]
+        z1=verts[1]._pos[2]
+
+        if((x1-x0)==0.0): xd=0.0
+        else: xd = (x[0]-x0)/(x1-x0)
+        if((y1-y0)==0.0): yd =0.0
+        else: yd = (x[1]-y0)/(y1-y0)
+        if((z1-z0)==0.0): zd=0.0
+        else: zd = (x[2]-z0)/(z1-z0)
+
+        c00 =  Point3D(0,0,0)
+        c10 =  Point3D(0,0,0)
+        c01 =  Point3D(0,0,0)
+        c11 =  Point3D(0,0,0)
+        c0 =  Point3D(0,0,0)
+        c1 =  Point3D(0,0,0)
+        c =  Point3D(0,0,0)
+
+        c00 = verts[0]._mag.mult(1.0-xd)
+        c00=c00.add(verts[4]._mag.mult(xd))
+        c10 = verts[2]._mag.mult(1.0-xd)
+        c10=c10.add(verts[6]._mag.mult(xd))
+        c01 = verts[1]._mag.mult(1.0-xd)
+        c01=c01.add(verts[5]._mag.mult(xd))
+        c11 = verts[3]._mag.mult(1.0-xd)
+        c11=c11.add(verts[7]._mag.mult(xd))
         
+        c0= c00.mult(1.0-yd)
+        c0=c0.add(c10.mult(yd))
+        c1=c01.mult(1.0-yd)
+        c1=c1.add(c11.mult(yd))
+       
+        c = c0.mult(1.0-zd)
+        c=c.add(c1.mult(zd))
+        
+        return c
+        
+    def getValueNNInt(self,x,dt):
+        xtupple = (x._x,x._y,x._z)
+        d,ni = self._kdTree.query(xtupple,8) ## return the indices of the nearest neigbhour, d and ni are arrays
+        if ni == []:
+            print("Cell not Found",x)
+            return
+        nn_list = []
+        for i in ni:
+            nn_list.append(self._vertexList[i])
+        nn_list = sorted(nn_list)
+        return self.trilinearInterpolation(nn_list,x)
                 
         
     ## returns the interpolated value at position x

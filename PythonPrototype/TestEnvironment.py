@@ -138,6 +138,7 @@ def testRK_Whole_SL(theta,phi,r,direction,tmax=1.0e+10,t0=0.8e-4,max_steps=1000)
     loadGaussCoefSimu("../../Gauss_RE.dat","../../Gauss_ICB.dat")
     data = ds.VTKData()
     data.loadFile('C:/out.1200.vtk')
+    data.builtKDTree()
     sph.setData(data)
     sl=[]
     vl=[]
@@ -279,6 +280,35 @@ def testBoundaryVecField():
     Vis.setVectorfield2(xf_oc,vf_oc)
     return    
 
+def testBoundaryVecField2():
+    loadGaussCoefSimu("../../Gauss_RE.dat","../../Gauss_ICB.dat")
+    data = ds.VTKData()
+    data.loadFile('C:/out.1200.vtk')
+    data.builtKDTree()
+    sph.setData(data)
+    vf_mantle = []
+    vf_oc = []
+    xf_mantle=[]
+    xf_oc = []
+    for theta in range(10,2*3141,315):
+        for phi in range(10,3141,158):
+            ##choose verteces out of the data set -> avoid interpolation
+            tpr_oc = ds.Point3D(theta/1000.0, phi/1000.0, 1.537983852128 - 1.0e-4)
+            xyz_oc = toCartesian(tpr_oc)
+            xyz_tripple = (xyz_oc._x,xyz_oc._y,xyz_oc._z)
+            di,oc_index = data._kdTree.query(xyz_tripple)
+            xyz_oc = data._vertexList[oc_index]._pos
+            vf_oc.append(data._vertexList[oc_index]._mag)
+            xf_oc.append(xyz_oc)
+            
+            xyz_m = xyz_oc.add(Point3D(0.0,0.0,1.0e-4))
+            xf_mantle.append(xyz_m)
+            vf_mantle.append(evalSHA(xyz_m,1.0))
+            
+    Vis.setVectorfield(xf_mantle,vf_mantle)
+    Vis.setVectorfield2(xf_oc,vf_oc)
+    return    
+
 def DS_compared_Vecfield():
     loadGaussCoefSimu("../../Gauss_RE.dat","../../Gauss_ICB.dat")
     data = ds.VTKData()
@@ -395,11 +425,13 @@ def GridTestVis(num_Cells):
         print(verts)
    
 def main():
+    #data= ds.VTKData()
     #data = loadData('C:/out.1200.vtk')
     #Vis.built_cm_rainbow(data)
+    #data.builtKDTree()
     #GridTestVis(5000)                              ##define number of Cells to be visible
-    DS_compared_Vecfield()
-    #testBoundaryVecField()
+    #DS_compared_Vecfield()
+    testBoundaryVecField2()
     #testRK_Dipol_SL(3.0,0.5,2.8,"forward")
     """Test of Extrapolation Method """
     #for phi in range(10,2*3141,500):
@@ -407,10 +439,10 @@ def main():
        # testRK_Dipol_SL(0.3,phi/1000.0,2.3,"forward")
        # testRK_Dipol_SL(0.6,phi/1000.0,2.3,"forward")
     """Test of whole Streamline Vis""" 
-    #for phi in range(10,2*3141,600):
-       # test_OC_only(1.4,phi/1000.0,1.1,"forward",data)
-        #test_OC_only(1.4,phi/1000.0,1.1,"backward",data)
-    #tes#t_OC_only(1.4,0.6,0.7,"forward",data)
+    #for phi in range(200,2*3141,600):
+     #   test_OC_only(1.4,phi/1000.0,0.7,"forward",data)
+      #  test_OC_only(1.4,phi/1000.0,0.7,"backward",data)
+    #test_OC_only(1.4,0.6,0.7,"forward",data)
     #test_OC_only(1.0,0.6,1.0,"forward",data)
     ##----degenereted case
     #testRK_Whole_SL(1.4,0.6,1.1,"forward")
