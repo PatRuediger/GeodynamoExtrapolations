@@ -367,7 +367,7 @@ def Draw ():
     drawVectorfield(g_vecFieldPos2,g_vecFieldValue2,0.3)
     glColor4f(1.0,0.1,0.1,1.0)
     drawStreamLines()
-    #drawWireFrame()
+    drawWireFrame()
     #streamLine(g_streamLinePos,g_streamLineValue)
     glPopMatrix();													# // NEW: Unapply Dynamic Transform
     

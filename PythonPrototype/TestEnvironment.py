@@ -397,8 +397,8 @@ def GridTestVis(num_Cells):
 def main():
     #data = loadData('C:/out.1200.vtk')
     #Vis.built_cm_rainbow(data)
-    #GridTestVis(5000)                              ##define number of Cells to be visible
-    DS_compared_Vecfield()
+    GridTestVis(5000)                              ##define number of Cells to be visible
+    #DS_compared_Vecfield()
     #testBoundaryVecField()
     #testRK_Dipol_SL(3.0,0.5,2.8,"forward")
     """Test of Extrapolation Method """
