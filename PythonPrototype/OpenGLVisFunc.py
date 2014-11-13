@@ -287,7 +287,7 @@ def drawWireFrame():
     global g_cellList
     glLineWidth(0.1)
    # print("Drawing Wireframe")
-    for i in range (100,len(g_cellList),len(g_cellList)/5000):
+    for i in range (len(g_cellList)):
         drawSingleWire(g_cellList[i])
     #num_cores = multiprocessing.cpu_count()
     #Parallel(n_jobs=num_cores)(delayed(drawSingleWire)(cell) for cell in g_cellList)
@@ -367,7 +367,8 @@ def Draw ():
     drawVectorfield(g_vecFieldPos2,g_vecFieldValue2,0.3)
     glColor4f(1.0,0.1,0.1,1.0)
    # drawStreamLines()
-#    drawWireFrame()
+    glEnable(GL_CULL_FACE)
+    drawWireFrame()
     #streamLine(g_streamLinePos,g_streamLineValue)
     glPopMatrix();													# // NEW: Unapply Dynamic Transform
     

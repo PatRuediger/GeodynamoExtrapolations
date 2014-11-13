@@ -417,21 +417,61 @@ def GridTestVis(num_Cells):
     data = ds.VTKData()
     data.loadFile('C:/out.1200.vtk')
     #Vis.initVertexBuffer(data._vertexList)
-    Vis.setCellList(data._cellList)
+    cellList = []
     for i in range(1,len(data._cellList),len(data._cellList)/num_Cells):
-        verts=[]
-        for ver in data._cellList[i]._verts:
-            verts.append(ver._ID)
-        print(verts)
-   
+        cellList.append(data._cellList[i])
+    Vis.setCellList(cellList)
+
+
+def VisGridConcave():
+    data=ds.VTKData()
+    data.loadFile('C:/out.1200.vtk')
+    data.computeCellTopology()
+    cellList = computeCellVolumes(data)
+    visualCellList =[]
+    for cell in cellList:
+        cell.computeFaceNeighbours(data)
+        for nb in cell._faceNeighbours:
+            visualCellList.append(data._cellList[nb-1])
+    Vis.setCellList(visualCellList)
+        
+def computeCellVolumes(data):
+    vol=0.0
+    vol_List =[]
+    cell_List = []
+    ##to avoid misunderstanding in Cell ID numberin and list numbering, Cell ID 0 doesn't exist
+    #vol_List.append(0.0)
+    print("compute Cell volumes ... ")
+    for cell in data._cellList:
+        v=[]
+        for vert in cell._verts:
+            v.append(vert._pos)
+        def pV(a,b):
+            return v[b].sub(v[a])
+        vol =1.0/12.0* ds.dot(pV(7,1),(ds.cross(pV(5,2),pV(1,6) )).add(ds.cross(pV(2,0),pV(1,3)).add(ds.cross(pV(0,5),pV(1,4) ) ) ) )
+        vol+=1.0/12.0* ds.dot(pV(7,2),(ds.cross(pV(5,2),pV(1,6) )).add(ds.cross(pV(7,6),pV(3,6))))
+        vol+=1.0/12.0* ds.dot(pV(7,0),(ds.cross(pV(2,0),pV(1,3) )).add(ds.cross(pV(7,3),pV(4,3))))
+        vol+=1.0/12.0* ds.dot(pV(7,5),(ds.cross(pV(0,5),pV(1,4) )).add(ds.cross(pV(7,4),pV(6,4))))
+        if( vol < 0.0):
+            #print(cell._ID,vol)
+            vol_List.append(vol)
+            cell_List.append(cell) 
+        #else:    
+            #vol_List.append(vol)
+    maxVol = max(vol_List)
+    minVol = min(vol_List)
+    print("Max Volume: ", maxVol,"Min Volume: ", minVol)
+    return cell_List        
+
 def main():
     #data= ds.VTKData()
     #data = loadData('C:/out.1200.vtk')
     #Vis.built_cm_rainbow(data)
     #data.builtKDTree()
+    VisGridConcave()
     #GridTestVis(5000)                              ##define number of Cells to be visible
     #DS_compared_Vecfield()
-    testBoundaryVecField2()
+    #testBoundaryVecField2()
     #testRK_Dipol_SL(3.0,0.5,2.8,"forward")
     """Test of Extrapolation Method """
     #for phi in range(10,2*3141,500):

@@ -68,6 +68,13 @@ def dot(a,b):
         b0 = b
         return a0._x * b0._x + a0._y * b0._y + a0._z * b0._z
 
+def cross(a,b):
+    c = Point3D(0.0,0.0,0.0)
+    c._x = a._y*b._z - a._z*b._y
+    c._y = a._z*b._x - a._x*b._z
+    c._z = a._x*b._y - a._y*b._x
+    return c
+
 #Coordinate transformation Cartesian  to Spherical
 def toSpherical(x):
     v=Point3D(0,0,0)
@@ -155,6 +162,8 @@ class Cell:
     #Pointer to next Cell
     _nextCell = None
     
+    #ordering: front,back,left,right,top,bottom
+    _faceNeighbours =[6]
     #Face sharing neighbours
     #the order is not given
     #To access the cells in the list, you must use ID-1
@@ -166,8 +175,47 @@ class Cell:
         self._verts = [v0,v1,v2,v3,v4,v5,v6,v7]
         self._ID = ID
 
-
-
+    def computeFaceNeighbours(self,data):
+        front =[]
+        back = []
+        left = []
+        right = []
+        top = []
+        bottom = []
+        for nb in self._neighbours:
+            face = set(data._cellList[nb-1]._verts).intersection(set([self._verts[0],self._verts[1],self._verts[2],self._verts[3]]))
+            if len(face) ==4:
+                front.append(nb)
+            face = set(data._cellList[nb-1]._verts).intersection(set([self._verts[4],self._verts[5],self._verts[6],self._verts[7]]))
+            if len(face) ==4:
+                back.append(nb)
+            face = set(data._cellList[nb-1]._verts).intersection(set([self._verts[4],self._verts[5],self._verts[1],self._verts[0]]))
+            if len(face) ==4:
+                left.append(nb)
+            face = set(data._cellList[nb-1]._verts).intersection(set([self._verts[7],self._verts[6],self._verts[2],self._verts[3]]))
+            if len(face) ==4:
+                right.append(nb)
+            face = set(data._cellList[nb-1]._verts).intersection(set([self._verts[5],self._verts[6],self._verts[2],self._verts[1]]))
+            if len(face) ==4:
+                top.append(nb)
+            face = set(data._cellList[nb-1]._verts).intersection(set([self._verts[4],self._verts[7],self._verts[3],self._verts[0]]))
+            if len(face) ==4:
+                bottom.append(nb)
+        front.remove(self._ID)        
+        back.remove(self._ID)
+        left.remove(self._ID)
+        right.remove(self._ID)
+        top.remove(self._ID)
+        bottom.remove(self._ID)
+            
+        if len(front) >1 : print("multiple Front Face Neighbours for Cell", self._ID)        
+        if len(back) >1 : print("multiple back Face Neighbours for Cell", self._ID)
+        if len(left) >1 : print("multiple left Face Neighbours for Cell", self._ID)
+        if len(right) >1 : print("multiple right Face Neighbours for Cell", self._ID)
+        if len(top) >1 : print("multiple top Face Neighbours for Cell", self._ID)
+        if len(bottom) >1 : print("multiple bottom Face Neighbours for Cell", self._ID)                 
+        self._faceNeighbours = [front[0],back[0],left[0],right[0],top[0],bottom[0]]
+            
     def addCell(self,ID,v0,v1,v2,v3,v4,v5,v6,v7):
         newCell = Cell(ID,v0,v1,v2,v3,v4,v5,v6,v7)
         self._nextCell = newCell
@@ -489,7 +537,7 @@ class VTKData:
             #print(len(neighbourList))
             cell._neighbours=list(set(neighbourList))
             cellcount+=1
-            if(cellcount % 100)==0:print(cellcount)
+            #if(cellcount % 100)==0:print(cellcount)
             if((cellcount*100.0/self._numCells)%10) ==0:
                 print('Cell topology computition reached: ' + str(cellcount*100.0/self._numCells) + '%')
                 print("NeighbourList for Cell :", cell._ID,len(cell._neighbours))
