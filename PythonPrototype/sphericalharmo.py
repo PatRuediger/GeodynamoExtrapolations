@@ -62,7 +62,7 @@ def evalSHA(x,dt):
     global isOuterCore
     global isMantle            
     if ((toSpherical(x)._z)<=ocb) and ((toSpherical(x)._z)>icb):
-        result = g_data.getValue(x,dt) 
+        result = g_data.getValueNNInt(x,dt) 
         #if not isOuterCore:print(">>>>>>>>>>>>>>>>>>Going from Mantle to OC: Pos:",toSpherical(x)," Value:",toSpherical(result))
         #print("OC")
         isOuterCore = True
