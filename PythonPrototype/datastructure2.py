@@ -44,21 +44,20 @@ def mainTest():
 
 
 def testInterpolation():
-    v0 = Vertex(0,Point3D(0,0,0),Point3D(0,0,1))
-    v1 = Vertex(1,Point3D(0,0,1),Point3D(1,0,1))
-    v2 = Vertex(2,Point3D(1,0,1),Point3D(0,1,0))
-    v3 = Vertex(3,Point3D(1,0,0),Point3D(1,1,0))
-    v4 = Vertex(4,Point3D(0,1,0),Point3D(0,1,0))
-    v5 = Vertex(5,Point3D(0,1,1),Point3D(1,0,1))
-    v6 = Vertex(6,Point3D(1,1,1),Point3D(0,1,1))
-    v7 = Vertex(7,Point3D(1,1,0),Point3D(1,0,1))
-
-    cell = Cell(0,v0,v1,v2,v3,v4,v5,v6,v7)
-    p= [0.2,0.5,0.5]
-    output = cell.isInside(p)
-    print(output)
-    temp = cell.trilinear(p)
-    print(temp)
+    v0 = Vertex(0,Point3D(0,0,0),Point3D(0.0,0.0,0.0))
+    v1 = Vertex(1,Point3D(0,0,1),Point3D(0.0,0.0,0.0))
+    v2 = Vertex(2,Point3D(0,1,0),Point3D(0.0,0.0,0.0))
+    v3 = Vertex(3,Point3D(0,1,1),Point3D(0.0,0.0,0.0))
+    v4 = Vertex(4,Point3D(1,0,0),Point3D(1.0,0.0,0.0))
+    v5 = Vertex(5,Point3D(1,0,1),Point3D(1.0,0.0,0.0))
+    v6 = Vertex(6,Point3D(1,1,0),Point3D(1.0,0.0,0.0))
+    v7 = Vertex(7,Point3D(1,1,1),Point3D(1.0,0.0,0.0))
+    verts=[v0,v1,v2,v3,v4,v5,v6,v7]
+    cell = Cell(0,v0,v1,v5,v4,v2,v3,v7,v6)
+    
+    p= Point3D(0.5,0.5,0.5)
+    
+    print(cell.squaredDistanceInterpolation(p))
 
 """Dot/Scalar Product for 3D Vectors"""
 def dot(a,b):
@@ -68,6 +67,19 @@ def dot(a,b):
         b0 = b
         return a0._x * b0._x + a0._y * b0._y + a0._z * b0._z
 
+
+def cross(a,b):
+    """cross product for two Point3D"""
+    n_x = a._y*b._z - a._z*b._y
+    n_y = a._z*b._x - a._x*b._z
+    n_z = a._x*b._y - b._x*a._y
+    n = Point3D(n_x,n_y,n_z)
+    return n 
+
+def normalize(a):
+    """normalize a Point3D a"""
+    return Point3D(a._x/a._length(),a._y/a._length(),a._z/a._length())
+    
 #Coordinate transformation Cartesian  to Spherical
 def toSpherical(x):
     v=Point3D(0,0,0)
@@ -152,9 +164,12 @@ class Cell:
     # ordering: c000,c001,c101,c100,c010,c011,c111,c110
     # leads to 0,1,2,3,4,5,6,7 in the array
     _verts =[]
+    # front,back,left,right,top,bottom
+    _faceNormals = []
+    _facePoints = []
     #Pointer to next Cell
     _nextCell = None
-    
+
     #Face sharing neighbours
     #the order is not given
     #To access the cells in the list, you must use ID-1
@@ -165,8 +180,20 @@ class Cell:
     def __init__(self,ID,v0,v1,v2,v3,v4,v5,v6,v7):
         self._verts = [v0,v1,v2,v3,v4,v5,v6,v7]
         self._ID = ID
+        self.computeFaceNormals()
 
-
+    def computeFaceNormals(self):
+        """with the above ordering and the assumption that the cell is a convex hull
+        all computed normals point inwards"""
+        n_front= normalize(cross(self._verts[3]._pos.sub(self._verts[2]._pos),self._verts[1]._pos.sub(self._verts[2]._pos)))
+        n_back = normalize(cross(self._verts[7]._pos.sub(self._verts[4]._pos),self._verts[5]._pos.sub(self._verts[4]._pos)))
+        n_left = normalize(cross(self._verts[5]._pos.sub(self._verts[4]._pos),self._verts[0]._pos.sub(self._verts[4]._pos)))
+        n_right = normalize(cross(self._verts[2]._pos.sub(self._verts[3]._pos),self._verts[7]._pos.sub(self._verts[3]._pos)))
+        n_top = normalize(cross(self._verts[1]._pos.sub(self._verts[2]._pos),self._verts[6]._pos.sub(self._verts[2]._pos)))
+        n_bottom = normalize(cross(self._verts[3]._pos.sub(self._verts[0]._pos),self._verts[4]._pos.sub(self._verts[0]._pos)))
+        self._faceNormals = [n_front,n_back,n_left,n_right,n_top,n_bottom]
+        self._facePoints =  [self._verts[3]._pos,self._verts[7]._pos,self._verts[5]._pos,self._verts[2]._pos,self._verts[1]._pos,self._verts[3]._pos]
+        return
 
     def addCell(self,ID,v0,v1,v2,v3,v4,v5,v6,v7):
         newCell = Cell(ID,v0,v1,v2,v3,v4,v5,v6,v7)
@@ -174,13 +201,13 @@ class Cell:
         return self._nextCell
 
 
-    ## @input is an array  with 3 entries
+
     def isInside(self,p):
-        bounds = self.boundaries()
-        if bounds[0]<=p[0] and bounds[1]<=p[1] and bounds[2]<=p[2] and bounds[3]>=p[0] and bounds[4]>=p[1] and bounds[5]>=p[2]:
-            return True
-        else:
-            return False
+        """uses cell normals and hesse normal form to determine if point is inside or not"""
+        for i in range(len(self._faceNormals)):
+            d = dot(self._faceNormals[i],self._facePoints[i])
+            if (dot(p,self._faceNormals[i]) - d) < 0.0:  return False
+        return True
     
     def gridSize(self):
         bounds = self.boundaries()
@@ -190,6 +217,18 @@ class Cell:
         gridlen.append(bounds[5]-bounds[2])
         return min(gridlen)
 
+    def squaredDistanceInterpolation(self,x):
+        """uses euler norm and point distance for interpolation"""
+        if(self.isInside(x)):
+            c = Point3D(0.0,0.0,0.0)
+            dsum=0.0
+            for i in range(8):
+                d = (x.sub(self._verts[i]._pos))._length()
+                c = c.add(self._verts[i]._mag.mult(d))
+                dsum+=d
+            c = c.mult(1.0/dsum)
+            return True, c    
+        else: return False,None,self
             
     ## @input is an array  with 3 entries
     ## @output is a Point3D
@@ -210,13 +249,13 @@ class Cell:
             if((z1-z0)==0.0): zd=0.0
             else: zd = (x[2]-z0)/(z1-z0)
 
-            c00 =  Point3D(0,0,0)
-            c10 =  Point3D(0,0,0)
-            c01 =  Point3D(0,0,0)
-            c11 =  Point3D(0,0,0)
-            c0 =  Point3D(0,0,0)
-            c1 =  Point3D(0,0,0)
-            c =  Point3D(0,0,0)
+            c00 =  Point3D(0.0,0.0,0.0)
+            c10 =  Point3D(0.0,0.0,0.0)
+            c01 =  Point3D(0.0,0.0,0.0)
+            c11 =  Point3D(0.0,0.0,0.0)
+            c0 = Point3D(0.0,0.0,0.0)
+            c1 =  Point3D(0.0,0.0,0.0)
+            c =  Point3D(0.0,0.0,0.0)
 
             c00 = self._verts[0]._mag.mult(1.0-xd)
             c00=c00.add(self._verts[3]._mag.mult(xd))
@@ -287,18 +326,19 @@ class VTKData:
         self._kdTree = KDTree(vertexListTripples)
 
     def getValueKDTree(self,x,dt):
+        """trilinear Interpolation on cells, with kd-tree for cell search"""
         xtupple = (x._x,x._y,x._z)
         d,ni = self._kdTree.query(xtupple) ## return the indices of the nearest neigbhour, d and ni are arrays
         nnVertex = self._vertexList[ni]
         for neighbourID in nnVertex._partOfCell:
             self._currentCell = self._cellList[neighbourID-1]
-            isFound,intPoint, nextCell = self._currentCell.trilinear(x)
+            isFound,intPoint, nextCell = self._currentCell.squaredDistanceInterpolation(x)
             if(isFound): 
                 return intPoint
         print("Cell not Found",x)        
  
     def trilinearInterpolation(self,verts,x):
-        ##trilinear interpolation of x with lexikographically ordered input array verts
+        """trilinear interpolation of x with lexikographically ordered input array verts"""
         x0=verts[0]._pos[0]
         x1=verts[4]._pos[0]
         y0=verts[0]._pos[1]
@@ -313,13 +353,13 @@ class VTKData:
         if((z1-z0)==0.0): zd=0.0
         else: zd = (x[2]-z0)/(z1-z0)
 
-        c00 =  Point3D(0,0,0)
-        c10 =  Point3D(0,0,0)
-        c01 =  Point3D(0,0,0)
-        c11 =  Point3D(0,0,0)
-        c0 =  Point3D(0,0,0)
-        c1 =  Point3D(0,0,0)
-        c =  Point3D(0,0,0)
+        c00 =  Point3D(0.0,0.0,0.0)
+        c10 =  Point3D(0.0,0.0,0.0)
+        c01 =  Point3D(0.0,0.0,0.0)
+        c11 =  Point3D(0.0,0.0,0.0)
+        c0 = Point3D(0.0,0.0,0.0)
+        c1 =  Point3D(0.0,0.0,0.0)
+        c =  Point3D(0.0,0.0,0.0)
 
         c00 = verts[0]._mag.mult(1.0-xd)
         c00=c00.add(verts[4]._mag.mult(xd))
@@ -341,6 +381,7 @@ class VTKData:
         return c
         
     def getValueNNInt(self,x,dt):
+        """ Trilinear Interpolation, using the 8 nearest neighbours"""
         xtupple = (x._x,x._y,x._z)
         d,ni = self._kdTree.query(xtupple,8) ## return the indices of the nearest neigbhour, d and ni are arrays
         if ni == []:
@@ -353,8 +394,8 @@ class VTKData:
         return self.trilinearInterpolation(nn_list,x)
                 
         
-    ## returns the interpolated value at position x
     def getValue(self,x,dt):
+        """basic trilinear interpolation based on cubic cells, brute force + neighboring lists for cell search"""
      #   print("Search for Cell with point: ", toSpherical(x))
         isFound,intPoint,self._currentCell = self._currentCell.trilinear(x)
         if(isFound): 

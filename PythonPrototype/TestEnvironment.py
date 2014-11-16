@@ -268,16 +268,18 @@ def testBoundaryVecField():
         if((i*100.0/len(xf_oc))%10)==0: print("Evaluation reached: " +str(i*100.0/len(xf_oc)) +"%")
        # print("OC>>>Pos:",x_oc ,"Value:",v)
         vf_oc.append(v)
-        
+    i=0    
     for x_m in xf_mantle:
         #print("MANTEL>>>Pos:",toSpherical(x_m) )
+        i+=1
         v = evalSHA(x_m,1.0)
+        if((i*100.0/len(xf_mantle))%10)==0: print("SHA Calc reached: " +str(i*100.0/len(xf_mantle)) +"%")
         #print("MANTEL>>>Pos:",x_m ,"Value:",v)
         vf_mantle.append(v)
     #xf = xf_mantle + xf_oc
     #vf = vf_mantle + vf_oc    
-    Vis.setVectorfield(xf_mantle,vf_mantle)
-    Vis.setVectorfield2(xf_oc,vf_oc)
+    Vis.setVectorfield(xf_mantle,vf_mantle) #purple
+    Vis.setVectorfield2(xf_oc,vf_oc)    #light blue
     return    
 
 def testBoundaryVecField2():
@@ -301,7 +303,7 @@ def testBoundaryVecField2():
             vf_oc.append(data._vertexList[oc_index]._mag)
             xf_oc.append(xyz_oc)
             
-            xyz_m = xyz_oc.add(Point3D(0.0,0.0,1.0e-4))
+            xyz_m = xyz_oc.add(toCartesian(Point3D(0.0,0.0,1.0e-4)))
             xf_mantle.append(xyz_m)
             vf_mantle.append(evalSHA(xyz_m,1.0))
             
@@ -431,7 +433,7 @@ def main():
     #data.builtKDTree()
     #GridTestVis(5000)                              ##define number of Cells to be visible
     #DS_compared_Vecfield()
-    testBoundaryVecField2()
+    testBoundaryVecField()
     #testRK_Dipol_SL(3.0,0.5,2.8,"forward")
     """Test of Extrapolation Method """
     #for phi in range(10,2*3141,500):
