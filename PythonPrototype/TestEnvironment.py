@@ -460,6 +460,7 @@ def computeCellVolumes(data):
             #vol_List.append(vol)
     maxVol = max(vol_List)
     minVol = min(vol_List)
+    print(" .. finished cell volumes")
     print("Max Volume: ", maxVol,"Min Volume: ", minVol)
     return cell_List        
 

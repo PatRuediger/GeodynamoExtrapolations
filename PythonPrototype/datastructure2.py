@@ -54,7 +54,7 @@ def testInterpolation():
     v7 = Vertex(7,Point3D(1,1,0),Point3D(1,0,1))
 
     cell = Cell(0,v0,v1,v2,v3,v4,v5,v6,v7)
-    p= [0.2,0.5,0.5]
+    p= Point3D(0.2,0.5,0.5)
     output = cell.isInside(p)
     print(output)
     temp = cell.trilinear(p)
@@ -163,8 +163,9 @@ class Cell:
     _nextCell = None
     
     #ordering: front,back,left,right,top,bottom
-    _faceNeighbours =[6]
     #Face sharing neighbours
+    _faceNeighbours =[None]*6
+    _faceNormals = [None]*6
     #the order is not given
     #To access the cells in the list, you must use ID-1
     _neighbours=[]
@@ -174,6 +175,7 @@ class Cell:
     def __init__(self,ID,v0,v1,v2,v3,v4,v5,v6,v7):
         self._verts = [v0,v1,v2,v3,v4,v5,v6,v7]
         self._ID = ID
+        self.computeCellNormals()
 
     def computeFaceNeighbours(self,data):
         front =[]
@@ -213,8 +215,9 @@ class Cell:
         if len(left) >1 : print("multiple left Face Neighbours for Cell", self._ID)
         if len(right) >1 : print("multiple right Face Neighbours for Cell", self._ID)
         if len(top) >1 : print("multiple top Face Neighbours for Cell", self._ID)
-        if len(bottom) >1 : print("multiple bottom Face Neighbours for Cell", self._ID)                 
-        self._faceNeighbours = [front[0],back[0],left[0],right[0],top[0],bottom[0]]
+        if len(bottom) >1 : print("multiple bottom Face Neighbours for Cell", self._ID)   
+        print(front,back,left,right,top,bottom)      
+        self._faceNeighbours = [data._cellList[front[0]-1],data._cellList[back[0]-1],data._cellList[left[0]-1],data._cellList[right[0]-1],data._cellList[top[0]-1],data._cellList[bottom[0]-1] ]
             
     def addCell(self,ID,v0,v1,v2,v3,v4,v5,v6,v7):
         newCell = Cell(ID,v0,v1,v2,v3,v4,v5,v6,v7)
@@ -222,13 +225,51 @@ class Cell:
         return self._nextCell
 
 
+    def computeCellNormals(self):
+        """All normals are oriented to point inwards
+        """
+        self._faceNormals[0] = cross(self._verts[3]._pos.sub(self._verts[2]._pos) ,self._verts[1]._pos.sub(self._verts[2]._pos) ) 
+        self._faceNormals[0] = self._faceNormals[0].mult(1.0/self._faceNormals[0]._length())
+        
+        self._faceNormals[1] = cross(self._verts[4]._pos.sub(self._verts[7]._pos) ,self._verts[6]._pos.sub(self._verts[7]._pos) ) 
+        self._faceNormals[1] = self._faceNormals[1].mult(-1.0/self._faceNormals[1]._length())
+        
+        self._faceNormals[2] = cross(self._verts[0]._pos.sub(self._verts[1]._pos) ,self._verts[5]._pos.sub(self._verts[1]._pos) ) 
+        self._faceNormals[2] = self._faceNormals[2].mult(1.0/self._faceNormals[2]._length())    
+
+        self._faceNormals[3] = cross(self._verts[2]._pos.sub(self._verts[3]._pos) ,self._verts[7]._pos.sub(self._verts[3]._pos) ) 
+        self._faceNormals[3] = self._faceNormals[3].mult(1.0/self._faceNormals[3]._length())
+
+        self._faceNormals[4] = cross(self._verts[1]._pos.sub(self._verts[2]._pos) ,self._verts[6]._pos.sub(self._verts[2]._pos) ) 
+        self._faceNormals[4] = self._faceNormals[4].mult(1.0/self._faceNormals[4]._length())
+
+        self._faceNormals[5] = cross(self._verts[4]._pos.sub(self._verts[0]._pos) ,self._verts[3]._pos.sub(self._verts[0]._pos) ) 
+        self._faceNormals[5] = self._faceNormals[5].mult(-1.0/self._faceNormals[5]._length())
+        #print(self._faceNormals)
+        return
+        
     ## @input is an array  with 3 entries
     def isInside(self,p):
-        bounds = self.boundaries()
-        if bounds[0]<=p[0] and bounds[1]<=p[1] and bounds[2]<=p[2] and bounds[3]>=p[0] and bounds[4]>=p[1] and bounds[5]>=p[2]:
-            return True
-        else:
-            return False
+        ##built up HNF, if p*n0 -d >0 for all faces, then point is inside cell
+        d_front = dot(self._verts[0]._pos,self._faceNormals[0])
+        if (dot(p,self._faceNormals[0]) - d_front < 0): return False
+            
+        d_back = dot(self._verts[5]._pos,self._faceNormals[1])
+        if (dot(p,self._faceNormals[1]) - d_back < 0): return False
+            
+        d_left = dot(self._verts[4]._pos,self._faceNormals[2])
+        if (dot(p,self._faceNormals[2]) - d_left < 0): return False
+            
+        d_right = dot(self._verts[6]._pos,self._faceNormals[3])
+        if (dot(p,self._faceNormals[3]) - d_right < 0): return False
+            
+        d_top = dot(self._verts[5]._pos,self._faceNormals[4])
+        if (dot(p,self._faceNormals[4]) - d_top < 0): return False
+            
+        d_bottom = dot(self._verts[4]._pos,self._faceNormals[5])
+        if (dot(p,self._faceNormals[5]) - d_bottom < 0): return False
+            
+        return True
     
     def gridSize(self):
         bounds = self.boundaries()
