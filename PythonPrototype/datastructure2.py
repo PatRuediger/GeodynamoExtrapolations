@@ -216,8 +216,20 @@ class Cell:
         if len(right) >1 : print("multiple right Face Neighbours for Cell", self._ID)
         if len(top) >1 : print("multiple top Face Neighbours for Cell", self._ID)
         if len(bottom) >1 : print("multiple bottom Face Neighbours for Cell", self._ID)   
-        print(front,back,left,right,top,bottom)      
-        self._faceNeighbours = [data._cellList[front[0]-1],data._cellList[back[0]-1],data._cellList[left[0]-1],data._cellList[right[0]-1],data._cellList[top[0]-1],data._cellList[bottom[0]-1] ]
+        #print(front,back,left,right,top,bottom)    
+        if len(front) !=0:
+            self._faceNeighbours.append(data._cellList[front[0]-1])
+        if len(back) !=0:
+            self._faceNeighbours.append(data._cellList[back[0]-1])
+        if len(left) !=0:
+            self._faceNeighbours.append(data._cellList[left[0]-1])
+        if len(right) !=0:
+            self._faceNeighbours.append(data._cellList[right[0]-1])
+        if len(top) !=0:
+            self._faceNeighbours.append(data._cellList[top[0]-1])
+        if len(bottom) !=0:
+            self._faceNeighbours.append(data._cellList[bottom[0]-1])
+    
             
     def addCell(self,ID,v0,v1,v2,v3,v4,v5,v6,v7):
         newCell = Cell(ID,v0,v1,v2,v3,v4,v5,v6,v7)

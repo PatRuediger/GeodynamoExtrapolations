@@ -431,9 +431,14 @@ def VisGridConcave():
     visualCellList =[]
     for cell in cellList:
         cell.computeFaceNeighbours(data)
-        for nb in cell._faceNeighbours:
-            visualCellList.append(data._cellList[nb-1])
-    Vis.setCellList(visualCellList)
+        if len(set(cell._verts))<8:
+            print(set(cell._verts), cell._ID)
+        #for nb in cell._faceNeighbours:
+            #if nb != None:
+                #visualCellList.append(data._cellList[nb-1])
+    #Vis.setCellList(visualCellList)
+    print("Concave test finished")
+    return
         
 def computeCellVolumes(data):
     vol=0.0
