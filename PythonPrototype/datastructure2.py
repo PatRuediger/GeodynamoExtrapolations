@@ -17,6 +17,8 @@ Data structure for Visualization
 Using hexahedron Grid cells with 8 vertices
 """
 import math
+import numpy as np
+from numpy.linalg import inv
 from scipy.spatial import KDTree
 from datetime import datetime
 import timeit
@@ -44,17 +46,18 @@ def mainTest():
 
 
 def testInterpolation():
-    v0 = Vertex(0,Point3D(0,0,0),Point3D(0,0,1))
-    v1 = Vertex(1,Point3D(0,0,1),Point3D(1,0,1))
-    v2 = Vertex(2,Point3D(1,0,1),Point3D(0,1,0))
-    v3 = Vertex(3,Point3D(1,0,0),Point3D(1,1,0))
-    v4 = Vertex(4,Point3D(0,1,0),Point3D(0,1,0))
-    v5 = Vertex(5,Point3D(0,1,1),Point3D(1,0,1))
-    v6 = Vertex(6,Point3D(1,1,1),Point3D(0,1,1))
-    v7 = Vertex(7,Point3D(1,1,0),Point3D(1,0,1))
+     #           c000,c100,c110,c010,c001,c101,c111,c011
+    v0 = Vertex(0,Point3D(0.0,0.0,0.0),Point3D(1,0,0))
+    v1 = Vertex(1,Point3D(1.5,0.0,0.0),Point3D(1,0,0))
+    v2 = Vertex(2,Point3D(1.0,1.0,0.0),Point3D(1,0,0))
+    v3 = Vertex(3,Point3D(0.0,1.0,0.0),Point3D(1,0,0))
+    v4 = Vertex(4,Point3D(0.0,0.0,1.0),Point3D(1,0,0))
+    v5 = Vertex(5,Point3D(1.0,0.0,1.0),Point3D(1,0,0))
+    v6 = Vertex(6,Point3D(1.0,1.0,1.0),Point3D(1,0,0))
+    v7 = Vertex(7,Point3D(0.0,1.0,1.0),Point3D(1,0,0))
 
     cell = Cell(0,v0,v1,v2,v3,v4,v5,v6,v7)
-    p= Point3D(0.2,0.5,0.5)
+    p= Point3D(0.5,0.5,0.5)
     output = cell.isInside(p)
     print(output)
     temp = cell.trilinear(p)
@@ -94,6 +97,9 @@ class Point3D:
     def _length(self):
         return math.sqrt(self._x**2.0+self._y**2.0+self._z**2.0)
 
+    def toNumpyArray(self):    
+        return np.array((self._x,self._y,self._z))
+        
     def __init__(self,x,y,z):
         self._x = x
         self._y = y
@@ -156,7 +162,7 @@ class Cell:
 #---class Attributes should only be readed
     _ID = 0
     # should be 8 everytime
-    # ordering: c000,c001,c101,c100,c010,c011,c111,c110
+    # ordering:c000,c100,c110,c010,c001,c101,c111,c011
     # leads to 0,1,2,3,4,5,6,7 in the array
     _verts =[]
     #Pointer to next Cell
@@ -187,22 +193,22 @@ class Cell:
         for nb in self._neighbours:
             face = set(data._cellList[nb-1]._verts).intersection(set([self._verts[0],self._verts[1],self._verts[2],self._verts[3]]))
             if len(face) ==4:
-                front.append(nb)
+                bottom.append(nb)
             face = set(data._cellList[nb-1]._verts).intersection(set([self._verts[4],self._verts[5],self._verts[6],self._verts[7]]))
             if len(face) ==4:
-                back.append(nb)
-            face = set(data._cellList[nb-1]._verts).intersection(set([self._verts[4],self._verts[5],self._verts[1],self._verts[0]]))
+                top.append(nb)
+            face = set(data._cellList[nb-1]._verts).intersection(set([self._verts[0],self._verts[1],self._verts[4],self._verts[5]]))
             if len(face) ==4:
                 left.append(nb)
-            face = set(data._cellList[nb-1]._verts).intersection(set([self._verts[7],self._verts[6],self._verts[2],self._verts[3]]))
+            face = set(data._cellList[nb-1]._verts).intersection(set([self._verts[2],self._verts[3],self._verts[6],self._verts[7]]))
             if len(face) ==4:
                 right.append(nb)
-            face = set(data._cellList[nb-1]._verts).intersection(set([self._verts[5],self._verts[6],self._verts[2],self._verts[1]]))
+            face = set(data._cellList[nb-1]._verts).intersection(set([self._verts[1],self._verts[2],self._verts[5],self._verts[6]]))
             if len(face) ==4:
-                top.append(nb)
-            face = set(data._cellList[nb-1]._verts).intersection(set([self._verts[4],self._verts[7],self._verts[3],self._verts[0]]))
+                front.append(nb)
+            face = set(data._cellList[nb-1]._verts).intersection(set([self._verts[0],self._verts[3],self._verts[4],self._verts[7]]))
             if len(face) ==4:
-                bottom.append(nb)
+                back.append(nb)
         front.remove(self._ID)        
         back.remove(self._ID)
         left.remove(self._ID)
@@ -237,14 +243,15 @@ class Cell:
         return self._nextCell
 
 
+    ## out of date method!!!
     def computeCellNormals(self):
         """All normals are oriented to point inwards
         """
-        self._faceNormals[0] = cross(self._verts[3]._pos.sub(self._verts[2]._pos) ,self._verts[1]._pos.sub(self._verts[2]._pos) ) 
+        self._faceNormals[0] = cross(self._verts[0]._pos.sub(self._verts[3]._pos) ,self._verts[2]._pos.sub(self._verts[3]._pos) ) 
         self._faceNormals[0] = self._faceNormals[0].mult(1.0/self._faceNormals[0]._length())
         
-        self._faceNormals[1] = cross(self._verts[4]._pos.sub(self._verts[7]._pos) ,self._verts[6]._pos.sub(self._verts[7]._pos) ) 
-        self._faceNormals[1] = self._faceNormals[1].mult(-1.0/self._faceNormals[1]._length())
+        self._faceNormals[1] = cross(self._verts[6]._pos.sub(self._verts[7]._pos) ,self._verts[4]._pos.sub(self._verts[7]._pos) ) 
+        self._faceNormals[1] = self._faceNormals[1].mult(1.0/self._faceNormals[1]._length())
         
         self._faceNormals[2] = cross(self._verts[0]._pos.sub(self._verts[1]._pos) ,self._verts[5]._pos.sub(self._verts[1]._pos) ) 
         self._faceNormals[2] = self._faceNormals[2].mult(1.0/self._faceNormals[2]._length())    
@@ -255,33 +262,69 @@ class Cell:
         self._faceNormals[4] = cross(self._verts[1]._pos.sub(self._verts[2]._pos) ,self._verts[6]._pos.sub(self._verts[2]._pos) ) 
         self._faceNormals[4] = self._faceNormals[4].mult(1.0/self._faceNormals[4]._length())
 
-        self._faceNormals[5] = cross(self._verts[4]._pos.sub(self._verts[0]._pos) ,self._verts[3]._pos.sub(self._verts[0]._pos) ) 
-        self._faceNormals[5] = self._faceNormals[5].mult(-1.0/self._faceNormals[5]._length())
+        self._faceNormals[5] = cross(self._verts[3]._pos.sub(self._verts[0]._pos) ,self._verts[4]._pos.sub(self._verts[0]._pos) ) 
+        self._faceNormals[5] = self._faceNormals[5].mult(1.0/self._faceNormals[5]._length())
         #print(self._faceNormals)
         return
+       
+    def inversejacobiTrilinear(self,x,alpha,beta,gamma):
+        """input trilinear interpolated point x at alpha beta gamma"""
+        Lx =x._x
+        Ly =x._y
+        Lz =x._z
+        j00= Lx - self._verts[0]._pos[0]*(1.0-alpha) - self._verts[1]._pos[0]*(alpha) - self._verts[3]._pos[0]*(1.0-alpha) -self._verts[4]._pos[0]*(1.0-alpha)
+        j00= j00 - self._verts[5]._pos[0]*(alpha) - self._verts[7]._pos[0]*(1.0-alpha) - self._verts[2]._pos[0]*(alpha) - self._verts[6]._pos[0]*(alpha)
         
-    ## @input is an array  with 3 entries
+        j01= Lx - self._verts[0]._pos[0]*(1.0-beta) - self._verts[1]._pos[0]*(1.0-beta) - self._verts[3]._pos[0]*(beta) -self._verts[4]._pos[0]*(1.0-beta)
+        j01= j01 - self._verts[5]._pos[0]*(1.0-beta) - self._verts[7]._pos[0]*(beta) - self._verts[2]._pos[0]*(beta) - self._verts[6]._pos[0]*(beta)
+        
+        j02= Lx - self._verts[0]._pos[0]*(1.0-gamma) - self._verts[1]._pos[0]*(1.0-gamma) - self._verts[3]._pos[0]*(1.0 - gamma) -self._verts[4]._pos[0]*(gamma)
+        j02= j02 - self._verts[5]._pos[0]*(gamma) - self._verts[7]._pos[0]*(gamma) - self._verts[2]._pos[0]*(1.0 - gamma ) - self._verts[6]._pos[0]*(gamma)        
+        
+        j10= Ly - self._verts[0]._pos[1]*(1.0-alpha) - self._verts[1]._pos[1]*(alpha) - self._verts[3]._pos[1]*(1.0-alpha) -self._verts[4]._pos[1]*(1.0-alpha)
+        j10= j10 - self._verts[5]._pos[1]*(alpha) - self._verts[7]._pos[1]*(1.0-alpha) - self._verts[2]._pos[1]*(alpha) - self._verts[6]._pos[1]*(alpha)
+        
+        j11= Ly - self._verts[0]._pos[1]*(1.0-beta) - self._verts[1]._pos[1]*(1.0-beta) - self._verts[3]._pos[1]*(beta) -self._verts[4]._pos[1]*(1.0-beta)
+        j11= j11 - self._verts[5]._pos[1]*(1.0-beta) - self._verts[7]._pos[1]*(beta) - self._verts[2]._pos[1]*(beta) - self._verts[6]._pos[1]*(beta)
+        
+        j12= Ly - self._verts[0]._pos[1]*(1.0-gamma) - self._verts[1]._pos[1]*(1.0-gamma) - self._verts[3]._pos[1]*(1.0 - gamma) -self._verts[4]._pos[1]*(gamma)
+        j12= j12 - self._verts[5]._pos[1]*(gamma) - self._verts[7]._pos[1]*(gamma) - self._verts[2]._pos[1]*(1.0 - gamma ) - self._verts[6]._pos[1]*(gamma)
+        
+        j20= Lz - self._verts[0]._pos[2]*(1.0-alpha) - self._verts[1]._pos[2]*(alpha) - self._verts[3]._pos[2]*(1.0-alpha) -self._verts[4]._pos[2]*(1.0-alpha)
+        j20= j20 - self._verts[5]._pos[2]*(alpha) - self._verts[7]._pos[2]*(1.0-alpha) - self._verts[2]._pos[2]*(alpha) - self._verts[6]._pos[2]*(alpha)
+        
+        j21= Lz - self._verts[0]._pos[2]*(1.0-beta) - self._verts[1]._pos[2]*(1.0-beta) - self._verts[3]._pos[2]*(beta) -self._verts[4]._pos[2]*(1.0-beta)
+        j21= j21 - self._verts[5]._pos[2]*(1.0-beta) - self._verts[7]._pos[2]*(beta) - self._verts[2]._pos[2]*(beta) - self._verts[6]._pos[2]*(beta)
+        
+        j22= Lz - self._verts[0]._pos[2]*(1.0-gamma) - self._verts[1]._pos[2]*(1.0-gamma) - self._verts[3]._pos[2]*(1.0 - gamma) -self._verts[4]._pos[2]*(gamma)
+        j22= j22 - self._verts[5]._pos[2]*(gamma) - self._verts[7]._pos[2]*(gamma) - self._verts[2]._pos[2]*(1.0 - gamma ) - self._verts[6]._pos[2]*(gamma)
+        
+        jacobi = np.array(((j00,j01,j02),(j10,j11,j12),(j20,j21,j22)))
+        print("Jacobi:",jacobi)
+        print("det ",np.linalg.det(jacobi))
+        return inv(jacobi)
+    
+    ## @input is a Point3D 
     def isInside(self,p):
-        ##built up HNF, if p*n0 -d >0 for all faces, then point is inside cell
-        d_front = dot(self._verts[0]._pos,self._faceNormals[0])
-        if (dot(p,self._faceNormals[0]) - d_front < 0): return False
-            
-        d_back = dot(self._verts[5]._pos,self._faceNormals[1])
-        if (dot(p,self._faceNormals[1]) - d_back < 0): return False
-            
-        d_left = dot(self._verts[4]._pos,self._faceNormals[2])
-        if (dot(p,self._faceNormals[2]) - d_left < 0): return False
-            
-        d_right = dot(self._verts[6]._pos,self._faceNormals[3])
-        if (dot(p,self._faceNormals[3]) - d_right < 0): return False
-            
-        d_top = dot(self._verts[5]._pos,self._faceNormals[4])
-        if (dot(p,self._faceNormals[4]) - d_top < 0): return False
-            
-        d_bottom = dot(self._verts[4]._pos,self._faceNormals[5])
-        if (dot(p,self._faceNormals[5]) - d_bottom < 0): return False
-            
-        return True
+        alpha = 0.5
+        beta = 0.5
+        gamma = 0.5
+        delta = 1e-10  ##error threshold
+        delta_xc = Point3D(1.0,1.0,1.0)
+        while(delta_xc._length()>delta):
+            xp_star = self.trilinear_pos(p,alpha,beta,gamma)
+            print("xp_star: ",xp_star)
+            delta_xp = xp_star.sub(p)
+            print("delta_xp_star: ",delta_xp)
+            delta_xc_array = self.inversejacobiTrilinear(xp_star,alpha,beta,gamma).dot(delta_xp.toNumpyArray())
+
+            alpha += delta_xc_array[0]
+            beta += delta_xc_array[1]    
+            gamma += delta_xc_array[2]
+            if alpha >1.0 or beta >1.0 or gamma >1.0: 
+                return False, None
+            if(delta_xc._lenght()<delta):
+                return True,(alpha,beta,gamma)
     
     def gridSize(self):
         bounds = self.boundaries()
@@ -291,75 +334,33 @@ class Cell:
         gridlen.append(bounds[5]-bounds[2])
         return min(gridlen)
 
+    def trilinear_pos(self,x,a,b,c):
+         # ordering:c000,c100,c110,c010,c001,c101,c111,c011
+        result = self._verts[0]._pos.mult((1.0-a)*(1.0-b)*(1.0-c))
+        result = result.add(self._verts[1]._pos.mult((a*(1.0-b)*(1.0-c)) ))
+        result = result.add(self._verts[3]._pos.mult((1.0-a)*b*(1.0-c)))
+        result =result.add(self._verts[4]._pos.mult((1.0-a)*(1.0-b)*c))
+        result =result.add(self._verts[5]._pos.mult(a*(1.0-b)*c))
+        result = result.add(self._verts[7]._pos.mult((1.0-a)*b*c))
+        result =result.add(self._verts[2]._pos.mult(a*b*(1.0-c)))
+        result = result.add(self._verts[6]._pos.mult(a*b*c))        
+        return result
             
-    ## @input is an array  with 3 entries
+    ## @input is a Point3D 
     ## @output is a Point3D
     def trilinear(self,x):
-        if(self.isInside(x)):
-            #print(self._ID)
-            x0=self._verts[0]._pos[0]
-            x1=self._verts[3]._pos[0]
-            y0=self._verts[0]._pos[1]
-            y1=self._verts[4]._pos[1]
-            z0=self._verts[0]._pos[2]
-            z1=self._verts[1]._pos[2]
-
-            if((x1-x0)==0.0): xd=0.0
-            else: xd = (x[0]-x0)/(x1-x0)
-            if((y1-y0)==0.0): yd =0.0
-            else: yd = (x[1]-y0)/(y1-y0)
-            if((z1-z0)==0.0): zd=0.0
-            else: zd = (x[2]-z0)/(z1-z0)
-
-            c00 =  Point3D(0,0,0)
-            c10 =  Point3D(0,0,0)
-            c01 =  Point3D(0,0,0)
-            c11 =  Point3D(0,0,0)
-            c0 =  Point3D(0,0,0)
-            c1 =  Point3D(0,0,0)
-            c =  Point3D(0,0,0)
-
-            c00 = self._verts[0]._mag.mult(1.0-xd)
-            c00=c00.add(self._verts[3]._mag.mult(xd))
-            c10 = self._verts[4]._mag.mult(1.0-xd)
-            c10=c10.add(self._verts[7]._mag.mult(xd))
-            c01 = self._verts[1]._mag.mult(1.0-xd)
-            c01=c01.add(self._verts[2]._mag.mult(xd))
-            c11 = self._verts[5]._mag.mult(1.0-xd)
-            c11=c11.add(self._verts[6]._mag.mult(xd))
-            c0= c00.mult(1.0-yd)
-            c0=c0.add(c10.mult(yd))
-            c1=c01.mult(1.0-yd)
-            c1=c1.add(c11.mult(yd))
-            c = c0.mult(1.0-zd)
-            c=c.add(c1.mult(zd))
-            return True,c,self
+        if(self.isInside(x)[0]):
+            a = self.isInside(x)[1][0]
+            b = self.isInside(x)[1][1]
+            c = self.isInside(x)[1][2]
+            result = self._verts[0]._mag.mult((1.0-a)*(1.0-b)*(1.0-c)).add(self._verts[1]._mag.mult((a*(1.0-b)*(1.0-c)) ))
+            result.add(self._verts[3]._mag.mult((1.0-a)*b*(1.0-c)).add(self._verts[4]._mag.mult((1.0-a)*(1.0-b)*c)))
+            result.add(self._verts[5]._mag.mult(a*(1.0-b)*c).add(self._verts[7]._mag.mult((1.0-a)*b*c)))
+            result.add(self._verts[2]._mag.mult(a*b*(1.0-c)).add(self._verts[6]._mag.mult(a*b*c)))        
+            return result
         else:
             return False,None,self
 
-    def boundaries(self):
-        min_x = 10000000000000000.0
-        min_y = 10000000000000000.0
-        min_z = 10000000000000000.0
-        max_x = 0.0
-        max_y = 0.0
-        max_z = 0.0
-        for v in self._verts:
-            if min_x >= v._pos._x:
-                min_x = v._pos._x
-            if min_y >= v._pos._y:
-                min_y = v._pos._y
-            if min_z >= v._pos._z:
-                min_z = v._pos._z
-            if max_x <= v._pos._x:
-                max_x = v._pos._x
-            if max_y <= v._pos._y:
-                max_y = v._pos._y
-            if max_z <= v._pos._z:
-                max_z = v._pos._z
-        bounds = [min_x,min_y,min_z,max_x,max_y,max_z]
-        #print(bounds)
-        return bounds
 
 
 class VTKData:

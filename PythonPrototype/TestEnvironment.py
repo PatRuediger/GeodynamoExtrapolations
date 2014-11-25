@@ -253,7 +253,7 @@ def testBoundaryVecField():
     for theta in range(10,2*3141,315):
         for phi in range(10,3141,158):
             tpr_m = ds.Point3D(theta/1000.0, phi/1000.0, 1.537983852128 + 1.0e-4)
-            tpr_oc = ds.Point3D(theta/1000.0, phi/1000.0, 1.537983852128 - 1.0e-4)
+            tpr_oc = ds.Point3D(theta/1000.0, phi/1000.0, 1.537983852128 - 1.0e-3)
             xyz_m = toCartesian(tpr_m)
             xyz_oc = toCartesian(tpr_oc)
             xf_mantle.append(xyz_m)
@@ -453,12 +453,15 @@ def computeCellVolumes(data):
             v.append(vert._pos)
         def pV(a,b):
             return v[b].sub(v[a])
-        vol =1.0/12.0* ds.dot(pV(7,1),(ds.cross(pV(5,2),pV(1,6) )).add(ds.cross(pV(2,0),pV(1,3)).add(ds.cross(pV(0,5),pV(1,4) ) ) ) )
+        vol =1.0/12.0* ds.dot(pV(2,4),(ds.cross(pV(7,5),pV(4,6) )).add(ds.cross(pV(5,0),pV(4,1)).add(ds.cross(pV(0,7),pV(4,3) ) ) ) )
         vol+=1.0/12.0* ds.dot(pV(7,2),(ds.cross(pV(5,2),pV(1,6) )).add(ds.cross(pV(7,6),pV(3,6))))
         vol+=1.0/12.0* ds.dot(pV(7,0),(ds.cross(pV(2,0),pV(1,3) )).add(ds.cross(pV(7,3),pV(4,3))))
         vol+=1.0/12.0* ds.dot(pV(7,5),(ds.cross(pV(0,5),pV(1,4) )).add(ds.cross(pV(7,4),pV(6,4))))
         if( vol < 0.0):
-            #print(cell._ID,vol)
+            verts=[]
+            for ver in cell._verts: 
+                verts.append(toSpherical(ver._pos))
+            print(cell._ID,vol,verts)
             vol_List.append(vol)
             cell_List.append(cell) 
         #else:    
@@ -474,10 +477,10 @@ def main():
     #data = loadData('C:/out.1200.vtk')
     #Vis.built_cm_rainbow(data)
     #data.builtKDTree()
-    VisGridConcave()
+    #VisGridConcave()
     #GridTestVis(5000)                              ##define number of Cells to be visible
     #DS_compared_Vecfield()
-    #testBoundaryVecField2()
+    testBoundaryVecField()
     #testRK_Dipol_SL(3.0,0.5,2.8,"forward")
     """Test of Extrapolation Method """
     #for phi in range(10,2*3141,500):
