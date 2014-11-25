@@ -20,6 +20,7 @@ import math
 import numpy as np
 from numpy.linalg import inv
 from scipy.spatial import KDTree
+import scipy.optimize as opt
 from datetime import datetime
 import timeit
 
@@ -48,20 +49,22 @@ def mainTest():
 def testInterpolation():
      #           c000,c100,c110,c010,c001,c101,c111,c011
     v0 = Vertex(0,Point3D(0.0,0.0,0.0),Point3D(1,0,0))
-    v1 = Vertex(1,Point3D(1.5,0.0,0.0),Point3D(1,0,0))
+    v1 = Vertex(1,Point3D(1.0,0.0,0.0),Point3D(1,1,0))
     v2 = Vertex(2,Point3D(1.0,1.0,0.0),Point3D(1,0,0))
     v3 = Vertex(3,Point3D(0.0,1.0,0.0),Point3D(1,0,0))
-    v4 = Vertex(4,Point3D(0.0,0.0,1.0),Point3D(1,0,0))
+    v4 = Vertex(4,Point3D(0.0,0.0,1.0),Point3D(1,0,1))
     v5 = Vertex(5,Point3D(1.0,0.0,1.0),Point3D(1,0,0))
-    v6 = Vertex(6,Point3D(1.0,1.0,1.0),Point3D(1,0,0))
+    v6 = Vertex(6,Point3D(1.0,2.0,1.0),Point3D(1,1,0))
     v7 = Vertex(7,Point3D(0.0,1.0,1.0),Point3D(1,0,0))
 
-    cell = Cell(0,v0,v1,v2,v3,v4,v5,v6,v7)
-    p= Point3D(0.5,0.5,0.5)
-    output = cell.isInside(p)
+    cell1 = Cell(0,v0,v1,v2,v3,v4,v5,v6,v7)
+    
+
+    p= Point3D(0.6,0.5,0.5)
+    output = cell1.isInside(p)
     print(output)
-    temp = cell.trilinear(p)
-    print(temp)
+    #temp = cell1.trilinear(p)
+    #print(temp)
 
 """Dot/Scalar Product for 3D Vectors"""
 def dot(a,b):
@@ -77,6 +80,13 @@ def cross(a,b):
     c._y = a._z*b._x - a._x*b._z
     c._z = a._x*b._y - a._y*b._x
     return c
+
+def toCartesian(x):
+    v=Point3D(0,0,0)
+    v._x = x._z*math.sin(x._x)*math.cos(x._y)
+    v._y = x._z*math.sin(x._x)*math.sin(x._y)
+    v._z = x._z*math.cos(x._x)
+    return v
 
 #Coordinate transformation Cartesian  to Spherical
 def toSpherical(x):
@@ -181,7 +191,7 @@ class Cell:
     def __init__(self,ID,v0,v1,v2,v3,v4,v5,v6,v7):
         self._verts = [v0,v1,v2,v3,v4,v5,v6,v7]
         self._ID = ID
-        self.computeCellNormals()
+       # self.computeCellNormals()
 
     def computeFaceNeighbours(self,data):
         front =[]
@@ -267,63 +277,79 @@ class Cell:
         #print(self._faceNormals)
         return
        
-    def inversejacobiTrilinear(self,x,alpha,beta,gamma):
+    def inversejacobiTrilinear(self,x,a,b,c):
         """input trilinear interpolated point x at alpha beta gamma"""
-        Lx =x._x
-        Ly =x._y
-        Lz =x._z
-        j00= Lx - self._verts[0]._pos[0]*(1.0-alpha) - self._verts[1]._pos[0]*(alpha) - self._verts[3]._pos[0]*(1.0-alpha) -self._verts[4]._pos[0]*(1.0-alpha)
-        j00= j00 - self._verts[5]._pos[0]*(alpha) - self._verts[7]._pos[0]*(1.0-alpha) - self._verts[2]._pos[0]*(alpha) - self._verts[6]._pos[0]*(alpha)
+    
+        """J_a = self._verts[0]._mag.mult((1.0-b)*(1.0-c))
+        J_a = J_a.add(self._verts[1]._mag.mult(((1.0-b)*(1.0-c)) ))
+        J_a = J_a.add(self._verts[3]._mag.mult(b*(1.0-c)))
+        J_a =J_a.add(self._verts[4]._mag.mult((1.0-b)*c))
+        J_a =J_a.add(self._verts[5]._mag.mult((1.0-b)*c))
+        J_a = J_a.add(self._verts[7]._mag.mult(b*c))
+        J_a =J_a.add(self._verts[2]._mag.mult(b*(1.0-c)))
+        J_a = J_a.add(self._verts[6]._mag.mult(b*c))      
         
-        j01= Lx - self._verts[0]._pos[0]*(1.0-beta) - self._verts[1]._pos[0]*(1.0-beta) - self._verts[3]._pos[0]*(beta) -self._verts[4]._pos[0]*(1.0-beta)
-        j01= j01 - self._verts[5]._pos[0]*(1.0-beta) - self._verts[7]._pos[0]*(beta) - self._verts[2]._pos[0]*(beta) - self._verts[6]._pos[0]*(beta)
+        J_b = self._verts[0]._mag.mult((1.0-a)*(1.0-c))
+        J_b = J_b.add(self._verts[1]._mag.mult((a*(1.0-c)) ))
+        J_b = J_b.add(self._verts[3]._mag.mult((1.0-a)*(1.0-c)))
+        J_b =J_b.add(self._verts[4]._mag.mult((1.0-a)*c))
+        J_b =J_b.add(self._verts[5]._mag.mult(a*c))
+        J_b = J_b.add(self._verts[7]._mag.mult((1.0-a)*c))
+        J_b =J_b.add(self._verts[2]._mag.mult(a*(1.0-c)))
+        J_b = J_b.add(self._verts[6]._mag.mult(a*c)) 
         
-        j02= Lx - self._verts[0]._pos[0]*(1.0-gamma) - self._verts[1]._pos[0]*(1.0-gamma) - self._verts[3]._pos[0]*(1.0 - gamma) -self._verts[4]._pos[0]*(gamma)
-        j02= j02 - self._verts[5]._pos[0]*(gamma) - self._verts[7]._pos[0]*(gamma) - self._verts[2]._pos[0]*(1.0 - gamma ) - self._verts[6]._pos[0]*(gamma)        
+        J_c = self._verts[0]._mag.mult((1.0-a)*(1.0-b))
+        J_c = J_c.add(self._verts[1]._mag.mult((a*(1.0-b)) ))
+        J_c = J_c.add(self._verts[3]._mag.mult((1.0-a)*b))
+        J_c = J_c.add(self._verts[4]._mag.mult((1.0-a)*(1.0-b)))
+        J_c = J_c.add(self._verts[5]._mag.mult(a*(1.0-b)))
+        J_c = J_c.add(self._verts[7]._mag.mult((1.0-a)*b))
+        J_c = J_c.add(self._verts[2]._mag.mult(a*b))
+        J_c = J_c.add(self._verts[6]._mag.mult(a*b))
+                
+        jacobi = np.array(((J_a[0],J_b[0],J_c[0]),(J_a[1],J_b[1],J_c[1]),(J_a[2],J_b[2],J_c[2])))"""
         
-        j10= Ly - self._verts[0]._pos[1]*(1.0-alpha) - self._verts[1]._pos[1]*(alpha) - self._verts[3]._pos[1]*(1.0-alpha) -self._verts[4]._pos[1]*(1.0-alpha)
-        j10= j10 - self._verts[5]._pos[1]*(alpha) - self._verts[7]._pos[1]*(1.0-alpha) - self._verts[2]._pos[1]*(alpha) - self._verts[6]._pos[1]*(alpha)
+       # J0=Point3D(a +1.0,b,c).sub(x)  
+      #  J1=Point3D(a,b +1.0,c).sub(x)  
+       # J2=Point3D(a,b,c +1.0).sub(x)  
         
-        j11= Ly - self._verts[0]._pos[1]*(1.0-beta) - self._verts[1]._pos[1]*(1.0-beta) - self._verts[3]._pos[1]*(beta) -self._verts[4]._pos[1]*(1.0-beta)
-        j11= j11 - self._verts[5]._pos[1]*(1.0-beta) - self._verts[7]._pos[1]*(beta) - self._verts[2]._pos[1]*(beta) - self._verts[6]._pos[1]*(beta)
+        J0=Point3D(a +1.0,b,c).sub(Point3D(a -1.0,b,c))
+        J0= J0.mult(0.5)
+        J1=Point3D(a,b +1.0,c).sub(Point3D(a,b -1.0,c)) 
+        J1= J1.mult(0.5)
+        J2=Point3D(a,b,c +1.0).sub(Point3D(a,b,c -1.0))
+        J2= J2.mult(0.5)
         
-        j12= Ly - self._verts[0]._pos[1]*(1.0-gamma) - self._verts[1]._pos[1]*(1.0-gamma) - self._verts[3]._pos[1]*(1.0 - gamma) -self._verts[4]._pos[1]*(gamma)
-        j12= j12 - self._verts[5]._pos[1]*(gamma) - self._verts[7]._pos[1]*(gamma) - self._verts[2]._pos[1]*(1.0 - gamma ) - self._verts[6]._pos[1]*(gamma)
-        
-        j20= Lz - self._verts[0]._pos[2]*(1.0-alpha) - self._verts[1]._pos[2]*(alpha) - self._verts[3]._pos[2]*(1.0-alpha) -self._verts[4]._pos[2]*(1.0-alpha)
-        j20= j20 - self._verts[5]._pos[2]*(alpha) - self._verts[7]._pos[2]*(1.0-alpha) - self._verts[2]._pos[2]*(alpha) - self._verts[6]._pos[2]*(alpha)
-        
-        j21= Lz - self._verts[0]._pos[2]*(1.0-beta) - self._verts[1]._pos[2]*(1.0-beta) - self._verts[3]._pos[2]*(beta) -self._verts[4]._pos[2]*(1.0-beta)
-        j21= j21 - self._verts[5]._pos[2]*(1.0-beta) - self._verts[7]._pos[2]*(beta) - self._verts[2]._pos[2]*(beta) - self._verts[6]._pos[2]*(beta)
-        
-        j22= Lz - self._verts[0]._pos[2]*(1.0-gamma) - self._verts[1]._pos[2]*(1.0-gamma) - self._verts[3]._pos[2]*(1.0 - gamma) -self._verts[4]._pos[2]*(gamma)
-        j22= j22 - self._verts[5]._pos[2]*(gamma) - self._verts[7]._pos[2]*(gamma) - self._verts[2]._pos[2]*(1.0 - gamma ) - self._verts[6]._pos[2]*(gamma)
-        
-        jacobi = np.array(((j00,j01,j02),(j10,j11,j12),(j20,j21,j22)))
-        print("Jacobi:",jacobi)
-        print("det ",np.linalg.det(jacobi))
+        jacobi = np.array(((J0[0],J1[0],J2[0]),(J0[1],J1[1],J2[1]),(J0[2],J1[2],J2[2])))
+        #print("Jacobi:",jacobi)
+       # print("det ",np.linalg.det(jacobi))
         return inv(jacobi)
+    
     
     ## @input is a Point3D 
     def isInside(self,p):
         alpha = 0.5
         beta = 0.5
         gamma = 0.5
-        delta = 1e-10  ##error threshold
+        delta = 1.0e-9  ##error threshold
+        max_iter = 100
         delta_xc = Point3D(1.0,1.0,1.0)
+        i=0
         while(delta_xc._length()>delta):
-            xp_star = self.trilinear_pos(p,alpha,beta,gamma)
-            print("xp_star: ",xp_star)
+            i+=1
+            xp_star = self.trilinear_pos(alpha,beta,gamma)
+           # print("xp_star: ",xp_star)
             delta_xp = xp_star.sub(p)
-            print("delta_xp_star: ",delta_xp)
+          #  print("delta_xp_star: ",delta_xp)
             delta_xc_array = self.inversejacobiTrilinear(xp_star,alpha,beta,gamma).dot(delta_xp.toNumpyArray())
-
+          #  print ("delta_xc_array: ",delta_xc_array)
             alpha += delta_xc_array[0]
             beta += delta_xc_array[1]    
             gamma += delta_xc_array[2]
             if alpha >1.0 or beta >1.0 or gamma >1.0: 
                 return False, None
-            if(delta_xc._lenght()<delta):
+            delta_xc = Point3D(delta_xc_array[0],delta_xc_array[1] ,delta_xc_array[2])
+            if(delta_xc._length()<delta or i >= max_iter):
                 return True,(alpha,beta,gamma)
     
     def gridSize(self):
@@ -334,18 +360,29 @@ class Cell:
         gridlen.append(bounds[5]-bounds[2])
         return min(gridlen)
 
-    def trilinear_pos(self,x,a,b,c):
+    def trilinear_pos(self,a,b,c):
          # ordering:c000,c100,c110,c010,c001,c101,c111,c011
         result = self._verts[0]._pos.mult((1.0-a)*(1.0-b)*(1.0-c))
         result = result.add(self._verts[1]._pos.mult((a*(1.0-b)*(1.0-c)) ))
         result = result.add(self._verts[3]._pos.mult((1.0-a)*b*(1.0-c)))
-        result =result.add(self._verts[4]._pos.mult((1.0-a)*(1.0-b)*c))
-        result =result.add(self._verts[5]._pos.mult(a*(1.0-b)*c))
+        result = result.add(self._verts[4]._pos.mult((1.0-a)*(1.0-b)*c))
+        result = result.add(self._verts[5]._pos.mult(a*(1.0-b)*c))
         result = result.add(self._verts[7]._pos.mult((1.0-a)*b*c))
         result =result.add(self._verts[2]._pos.mult(a*b*(1.0-c)))
         result = result.add(self._verts[6]._pos.mult(a*b*c))        
         return result
             
+    def trilinear_mag(self,a,b,c):
+        result = self._verts[0]._mag.mult((1.0-a)*(1.0-b)*(1.0-c))
+        result = result.add(self._verts[1]._mag.mult((a*(1.0-b)*(1.0-c)) ))
+        result = result.add(self._verts[3]._mag.mult((1.0-a)*b*(1.0-c)))
+        result = result.add(self._verts[4]._mag.mult((1.0-a)*(1.0-b)*c))
+        result = result.add(self._verts[5]._mag.mult(a*(1.0-b)*c))
+        result = result.add(self._verts[7]._mag.mult((1.0-a)*b*c))
+        result = result.add(self._verts[2]._mag.mult(a*b*(1.0-c)))
+        result = result.add(self._verts[6]._mag.mult(a*b*c))         
+        return result
+        
     ## @input is a Point3D 
     ## @output is a Point3D
     def trilinear(self,x):
@@ -357,7 +394,7 @@ class Cell:
             result.add(self._verts[3]._mag.mult((1.0-a)*b*(1.0-c)).add(self._verts[4]._mag.mult((1.0-a)*(1.0-b)*c)))
             result.add(self._verts[5]._mag.mult(a*(1.0-b)*c).add(self._verts[7]._mag.mult((1.0-a)*b*c)))
             result.add(self._verts[2]._mag.mult(a*b*(1.0-c)).add(self._verts[6]._mag.mult(a*b*c)))        
-            return result
+            return True,result,self
         else:
             return False,None,self
 
@@ -390,12 +427,21 @@ class VTKData:
 
     def getValueKDTree(self,x,dt):
         xtupple = (x._x,x._y,x._z)
-        d,ni = self._kdTree.query(xtupple) ## return the indices of the nearest neigbhour, d and ni are arrays
-        nnVertex = self._vertexList[ni]
-        for neighbourID in nnVertex._partOfCell:
-            self._currentCell = self._cellList[neighbourID-1]
-            isFound,intPoint, nextCell = self._currentCell.trilinear(x)
-            if(isFound): 
+        d,ni = self._kdTree.query(xtupple,50) ## return the indices of the nearest neigbhour, d and ni are arrays
+        #print(max(d))
+        for ver in ni:
+            nnVertex = self._vertexList[ver]
+            #print(nnVertex._partOfCell)
+            for neighbourID in nnVertex._partOfCell:
+                self._currentCell = self._cellList[neighbourID-1]
+                isFound,intPoint, nextCell = self._currentCell.trilinear(x)
+                if(isFound): 
+                    return intPoint
+        print("nearest neighbour didn't help",toSpherical(x))
+        for cell in self._cellList:
+            isFound,intPoint, nextCell = cell.trilinear(x)
+            if(isFound):
+                print("Cell Found", cell._ID, intPoint.sub(x)._length())
                 return intPoint
         print("Cell not Found",x)        
  
@@ -595,6 +641,10 @@ class VTKData:
             if((cellcount*100.0/self._numCells)%10) ==0:
                 print('Cell topology computition reached: ' + str(cellcount*100.0/self._numCells) + '%')
                 print("NeighbourList for Cell :", cell._ID,len(cell._neighbours))
+        for cell in self._cellList:
+            cell.computeFaceNeighbours(self)
+            if len(set(cell._verts))<8:
+                print(set(cell._verts), cell._ID)
         #free memory and delete partofCell list
         #li_length=[]
         #for vertex in self._vertexList:

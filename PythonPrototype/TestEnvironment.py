@@ -250,12 +250,12 @@ def testBoundaryVecField():
     
     xf_mantle=[]
     xf_oc = []
-    for theta in range(10,2*3141,315):
-        for phi in range(10,3141,158):
+    for theta in range(10,2*3141,700):
+        for phi in range(100,3141,350):
             tpr_m = ds.Point3D(theta/1000.0, phi/1000.0, 1.537983852128 + 1.0e-4)
             tpr_oc = ds.Point3D(theta/1000.0, phi/1000.0, 1.537983852128 - 1.0e-3)
-            xyz_m = toCartesian(tpr_m)
-            xyz_oc = toCartesian(tpr_oc)
+            xyz_m = ds.toCartesian(tpr_m)
+            xyz_oc = ds.toCartesian(tpr_oc)
             xf_mantle.append(xyz_m)
             xf_oc.append(xyz_oc)
     vf_mantle = []
@@ -263,19 +263,26 @@ def testBoundaryVecField():
     i=0
     for x_oc in xf_oc:
         i+=1
+        print(float(i)*100/len(xf_mantle))
         #print("OC>>>Pos:",toSpherical(x_oc) )
+        print("input pos: ", ds.toSpherical(x_oc))
         v = data.getValueKDTree(x_oc,1.0)
         if((i*100.0/len(xf_oc))%10)==0: print("Evaluation reached: " +str(i*100.0/len(xf_oc)) +"%")
        # print("OC>>>Pos:",x_oc ,"Value:",v)
         vf_oc.append(v)
-        
+    j=0    
     for x_m in xf_mantle:
+        j+=1
+        print(float(j)*100/len(xf_mantle))
         #print("MANTEL>>>Pos:",toSpherical(x_m) )
         v = evalSHA(x_m,1.0)
         #print("MANTEL>>>Pos:",x_m ,"Value:",v)
+        if((j*100.0/len(xf_mantle))%10)==0: 
+            print("Evaluation reached: " +str(j*100.0/len(xf_mantle)) +"%")
         vf_mantle.append(v)
-    #xf = xf_mantle + xf_oc
-    #vf = vf_mantle + vf_oc    
+        
+   # xf = xf_mantle + xf_oc
+   # vf = vf_mantle + vf_oc    
     Vis.setVectorfield(xf_mantle,vf_mantle)
     Vis.setVectorfield2(xf_oc,vf_oc)
     return    
