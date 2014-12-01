@@ -32,7 +32,7 @@ def test_Dipol_VF():
     Vis.setVectorfield(xf,vf)
     return
 
-def testRK_Dipol_SL(theta,phi,r,direction,tmax=1.0e+10,t0=0.8e-3,max_steps=1000):
+def testRK_Dipol_SL(theta,phi,r,direction,tmax=1.0e+10,t0=0.8e-3,max_steps=10000):
     loadGaussCoefSimu("../../Gauss_RE.dat","../../Gauss_ICB.dat")
     #data = ds.AvsUcdAscii()
     #data.loadFile('E:/Uni/GeodynamicsProject/Datasets/out.1550.inp')
@@ -49,7 +49,7 @@ def testRK_Dipol_SL(theta,phi,r,direction,tmax=1.0e+10,t0=0.8e-3,max_steps=1000)
     print("Start new Streamline with:", tpr0,toSphericalVecfield(tpr0,v0),direction)
     #print(tpr0,toSphericalVecfield(tpr0,v0))
     i= 0 
-    dtmax = 5000.0
+    dtmax = 10000.0
     while (max_steps>i) and (t<tmax):
        # print(((t-t0)*100.0)/(tmax-t0),"% finished ..... ")
         if(((toSpherical(nextPos)._z)<1.6)):
@@ -266,7 +266,7 @@ def testBoundaryVecField():
         print(float(i)*100/len(xf_mantle))
         #print("OC>>>Pos:",toSpherical(x_oc) )
         print("input pos: ", ds.toSpherical(x_oc))
-        v = data.getValueKDTree(x_oc,1.0)
+        v = data.getValueNNInt(x_oc,1.0)
         if((i*100.0/len(xf_oc))%10)==0: print("Evaluation reached: " +str(i*100.0/len(xf_oc)) +"%")
        # print("OC>>>Pos:",x_oc ,"Value:",v)
         vf_oc.append(v)
@@ -283,8 +283,8 @@ def testBoundaryVecField():
         
    # xf = xf_mantle + xf_oc
    # vf = vf_mantle + vf_oc    
-    Vis.setVectorfield(xf_mantle,vf_mantle)
-    Vis.setVectorfield2(xf_oc,vf_oc)
+    Vis.setVectorfield(xf_mantle,vf_mantle)  #purple
+    Vis.setVectorfield2(xf_oc,vf_oc) # light blue
     return    
 
 def testBoundaryVecField2():
@@ -308,11 +308,12 @@ def testBoundaryVecField2():
             vf_oc.append(data._vertexList[oc_index]._mag)
             xf_oc.append(xyz_oc)
             
-            xyz_m = xyz_oc.add(Point3D(0.0,0.0,1.0e-4))
+            tpr_m= toSpherical(xyz_oc).add(Point3D(0.0,0.0,1.0e-4))
+            xyz_m = toCartesian(tpr_m)
             xf_mantle.append(xyz_m)
-            vf_mantle.append(evalSHA(xyz_m,1.0))
-            
-    Vis.setVectorfield(xf_mantle,vf_mantle)
+            vf_mantle.append(sphericalHarmoAnalysis(xyz_m))
+    print("finised computation")        
+    #Vis.setVectorfield(xf_mantle,vf_mantle)
     Vis.setVectorfield2(xf_oc,vf_oc)
     return    
 
@@ -487,13 +488,13 @@ def main():
     #VisGridConcave()
     #GridTestVis(5000)                              ##define number of Cells to be visible
     #DS_compared_Vecfield()
-    testBoundaryVecField()
-    #testRK_Dipol_SL(3.0,0.5,2.8,"forward")
+    #testBoundaryVecField2()
+    testRK_Dipol_SL(2.8,0.2,2.8,"forward")
     """Test of Extrapolation Method """
     #for phi in range(10,2*3141,500):
-        #testRK_Dipol_SL(1.4,phi/1000.0,2.8,"forward")
+       # testRK_Dipol_SL(1.4,phi/1000.0,2.8,"forward")
        # testRK_Dipol_SL(0.3,phi/1000.0,2.3,"forward")
-       # testRK_Dipol_SL(0.6,phi/1000.0,2.3,"forward")
+     #  testRK_Dipol_SL(0.6,phi/1000.0,2.3,"forward")
     """Test of whole Streamline Vis""" 
     #for phi in range(200,2*3141,600):
      #   test_OC_only(1.4,phi/1000.0,0.7,"forward",data)

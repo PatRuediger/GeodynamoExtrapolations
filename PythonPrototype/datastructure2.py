@@ -201,22 +201,22 @@ class Cell:
         top = []
         bottom = []
         for nb in self._neighbours:
-            face = set(data._cellList[nb-1]._verts).intersection(set([self._verts[0],self._verts[1],self._verts[2],self._verts[3]]))
+            face = set(data._cellList[nb]._verts).intersection(set([self._verts[0],self._verts[1],self._verts[2],self._verts[3]]))
             if len(face) ==4:
                 bottom.append(nb)
-            face = set(data._cellList[nb-1]._verts).intersection(set([self._verts[4],self._verts[5],self._verts[6],self._verts[7]]))
+            face = set(data._cellList[nb]._verts).intersection(set([self._verts[4],self._verts[5],self._verts[6],self._verts[7]]))
             if len(face) ==4:
                 top.append(nb)
-            face = set(data._cellList[nb-1]._verts).intersection(set([self._verts[0],self._verts[1],self._verts[4],self._verts[5]]))
+            face = set(data._cellList[nb]._verts).intersection(set([self._verts[0],self._verts[1],self._verts[4],self._verts[5]]))
             if len(face) ==4:
                 left.append(nb)
-            face = set(data._cellList[nb-1]._verts).intersection(set([self._verts[2],self._verts[3],self._verts[6],self._verts[7]]))
+            face = set(data._cellList[nb]._verts).intersection(set([self._verts[2],self._verts[3],self._verts[6],self._verts[7]]))
             if len(face) ==4:
                 right.append(nb)
-            face = set(data._cellList[nb-1]._verts).intersection(set([self._verts[1],self._verts[2],self._verts[5],self._verts[6]]))
+            face = set(data._cellList[nb]._verts).intersection(set([self._verts[1],self._verts[2],self._verts[5],self._verts[6]]))
             if len(face) ==4:
                 front.append(nb)
-            face = set(data._cellList[nb-1]._verts).intersection(set([self._verts[0],self._verts[3],self._verts[4],self._verts[7]]))
+            face = set(data._cellList[nb]._verts).intersection(set([self._verts[0],self._verts[3],self._verts[4],self._verts[7]]))
             if len(face) ==4:
                 back.append(nb)
         front.remove(self._ID)        
@@ -234,17 +234,17 @@ class Cell:
         if len(bottom) >1 : print("multiple bottom Face Neighbours for Cell", self._ID)   
         #print(front,back,left,right,top,bottom)    
         if len(front) !=0:
-            self._faceNeighbours.append(data._cellList[front[0]-1])
+            self._faceNeighbours.append(data._cellList[front[0]])
         if len(back) !=0:
-            self._faceNeighbours.append(data._cellList[back[0]-1])
+            self._faceNeighbours.append(data._cellList[back[0]])
         if len(left) !=0:
-            self._faceNeighbours.append(data._cellList[left[0]-1])
+            self._faceNeighbours.append(data._cellList[left[0]])
         if len(right) !=0:
-            self._faceNeighbours.append(data._cellList[right[0]-1])
+            self._faceNeighbours.append(data._cellList[right[0]])
         if len(top) !=0:
-            self._faceNeighbours.append(data._cellList[top[0]-1])
+            self._faceNeighbours.append(data._cellList[top[0]])
         if len(bottom) !=0:
-            self._faceNeighbours.append(data._cellList[bottom[0]-1])
+            self._faceNeighbours.append(data._cellList[bottom[0]])
     
             
     def addCell(self,ID,v0,v1,v2,v3,v4,v5,v6,v7):
@@ -309,16 +309,16 @@ class Cell:
                 
         jacobi = np.array(((J_a[0],J_b[0],J_c[0]),(J_a[1],J_b[1],J_c[1]),(J_a[2],J_b[2],J_c[2])))"""
         
-       # J0=Point3D(a +1.0,b,c).sub(x)  
-      #  J1=Point3D(a,b +1.0,c).sub(x)  
-       # J2=Point3D(a,b,c +1.0).sub(x)  
+        J0=Point3D(a +1.0,b,c).sub(x)  
+        J1=Point3D(a,b +1.0,c).sub(x)  
+        J2=Point3D(a,b,c +1.0).sub(x)  
         
-        J0=Point3D(a +1.0,b,c).sub(Point3D(a -1.0,b,c))
+        """J0=Point3D(a +1.0,b,c).sub(Point3D(a -1.0,b,c))
         J0= J0.mult(0.5)
         J1=Point3D(a,b +1.0,c).sub(Point3D(a,b -1.0,c)) 
         J1= J1.mult(0.5)
         J2=Point3D(a,b,c +1.0).sub(Point3D(a,b,c -1.0))
-        J2= J2.mult(0.5)
+        J2= J2.mult(0.5)"""
         
         jacobi = np.array(((J0[0],J1[0],J2[0]),(J0[1],J1[1],J2[1]),(J0[2],J1[2],J2[2])))
         #print("Jacobi:",jacobi)
@@ -433,7 +433,7 @@ class VTKData:
             nnVertex = self._vertexList[ver]
             #print(nnVertex._partOfCell)
             for neighbourID in nnVertex._partOfCell:
-                self._currentCell = self._cellList[neighbourID-1]
+                self._currentCell = self._cellList[neighbourID]
                 isFound,intPoint, nextCell = self._currentCell.trilinear(x)
                 if(isFound): 
                     return intPoint
@@ -445,48 +445,14 @@ class VTKData:
                 return intPoint
         print("Cell not Found",x)        
  
-    def trilinearInterpolation(self,verts,x):
-        ##trilinear interpolation of x with lexikographically ordered input array verts
-        x0=verts[0]._pos[0]
-        x1=verts[4]._pos[0]
-        y0=verts[0]._pos[1]
-        y1=verts[3]._pos[1]
-        z0=verts[0]._pos[2]
-        z1=verts[1]._pos[2]
-
-        if((x1-x0)==0.0): xd=0.0
-        else: xd = (x[0]-x0)/(x1-x0)
-        if((y1-y0)==0.0): yd =0.0
-        else: yd = (x[1]-y0)/(y1-y0)
-        if((z1-z0)==0.0): zd=0.0
-        else: zd = (x[2]-z0)/(z1-z0)
-
-        c00 =  Point3D(0,0,0)
-        c10 =  Point3D(0,0,0)
-        c01 =  Point3D(0,0,0)
-        c11 =  Point3D(0,0,0)
-        c0 =  Point3D(0,0,0)
-        c1 =  Point3D(0,0,0)
-        c =  Point3D(0,0,0)
-
-        c00 = verts[0]._mag.mult(1.0-xd)
-        c00=c00.add(verts[4]._mag.mult(xd))
-        c10 = verts[2]._mag.mult(1.0-xd)
-        c10=c10.add(verts[6]._mag.mult(xd))
-        c01 = verts[1]._mag.mult(1.0-xd)
-        c01=c01.add(verts[5]._mag.mult(xd))
-        c11 = verts[3]._mag.mult(1.0-xd)
-        c11=c11.add(verts[7]._mag.mult(xd))
-        
-        c0= c00.mult(1.0-yd)
-        c0=c0.add(c10.mult(yd))
-        c1=c01.mult(1.0-yd)
-        c1=c1.add(c11.mult(yd))
-       
-        c = c0.mult(1.0-zd)
-        c=c.add(c1.mult(zd))
-        
-        return c
+    def weightedDistanceInt(self,xs,ds):
+        """ input is an array of points xs and distances ds to a point x"""
+        delta = sum(ds)
+        intPoint = Point3D(0.0,0.0,0.0)
+        for i in range(len(xs)):
+            intPoint = intPoint.add(xs[i]._mag.mult(ds[i]/delta))
+        print("Weighted Distance Int: ", intPoint)
+        return intPoint
         
     def getValueNNInt(self,x,dt):
         xtupple = (x._x,x._y,x._z)
@@ -497,8 +463,8 @@ class VTKData:
         nn_list = []
         for i in ni:
             nn_list.append(self._vertexList[i])
-        nn_list = sorted(nn_list)
-        return self.trilinearInterpolation(nn_list,x)
+        print(d)
+        return self.weightedDistanceInt(nn_list,d)
                 
         
     ## returns the interpolated value at position x
@@ -511,7 +477,7 @@ class VTKData:
        # print("Searching in neighbours")
         for ver in self._currentCell._verts:
             for neighbourID in ver._partOfCell:
-                neighbour = self._cellList[neighbourID-1]
+                neighbour = self._cellList[neighbourID]
                 isFound,intPoint,self._currentCell = neighbour.trilinear(x)
                 if(isFound):
                     #print("Celllist of Brute Force",ver._partOfCell)
@@ -587,7 +553,6 @@ class VTKData:
                     self._valueNames.append(entries[1])
                     
                 elif isVertex and entries[0]!="POINTS":
-                    ver_counter+=1
                     #print(entries[0])
                     pos = Point3D(float(entries[0]),float(entries[1]),float(entries[2]))
                     ## changed later
@@ -596,22 +561,22 @@ class VTKData:
                     self._vertexList.append(current)
                     if ((ver_counter*100.0/self._numVert) % 10)==0:
                         print('Vertex loading reached: ' + str(ver_counter*100.0/self._numVert) + '%')
+                    ver_counter+=1
                #     print('read'+str(ver_counter)+'Vertex')
                 elif isCell and entries[0]!="CELLS":                 
-                    cell_counter+=1
-                    currentCell = Cell(cell_counter,self._vertexList[int(entries[1])-1],self._vertexList[int(entries[2])-1],self._vertexList[int(entries[3])-1],self._vertexList[int(entries[4])-1],self._vertexList[int(entries[5])-1],self._vertexList[int(entries[6])-1],self._vertexList[int(entries[7])-1],self._vertexList[int(entries[8])-1])
+                    
+                    currentCell = Cell(cell_counter,self._vertexList[int(entries[1])],self._vertexList[int(entries[2])],self._vertexList[int(entries[3])],self._vertexList[int(entries[4])],self._vertexList[int(entries[5])],self._vertexList[int(entries[6])],self._vertexList[int(entries[7])],self._vertexList[int(entries[8])])
                     self._cellList.append(currentCell)
                     ##add link from vertex to cell
                     for ki in range(0,8,1):
-                        self._vertexList[int(entries[ki])-1]._partOfCell.append(cell_counter)
+                        self._vertexList[int(entries[ki])]._partOfCell.append(cell_counter)
                         #print("lenght of part of Cell List for ID: ",int(entries[ki]), len(self._vertexList[int(entries[ki])-1]._partOfCell))
                     self._currentCell = currentCell
                     if ((cell_counter*100.0/self._numCells) % 10)==0:
                         print('Cell loading reached: ' + str(cell_counter*100.0/self._numCells) + '%')
-               
+                    cell_counter+=1
                 elif isValue1 and entries[0]!="VECTORS":
-                  # print('read Values')
-                   value_counter+=1
+                  # print('read Values')                   
                    if(dim ==3):
                        self._vertexList[value_counter-1]._mag = Point3D(float(entries[0]),float(entries[1]),float(entries[2]))
                    if(dim==1):
@@ -619,12 +584,13 @@ class VTKData:
                        skippy =2
                    if ((value_counter*100.0/self._numVert) % 10)==0:
                         print('Values loading reached: ' + str(value_counter*100.0/self._numVert) + '%')
+                   value_counter+=1
      #   if(file.closed):self.computeCellTopology()
 
     def computeCellTopology(self):
         """ Computes a basic cell topology, based on cells which are sharing a vertex
             Takes very very long and consumes a lot of memory"""
-        cellcount=1
+        cellcount=0
         print("compute Cell topology .... ")
         for cell in self._cellList:
             #contains all neighbours, point, line and face neighbours

@@ -84,16 +84,16 @@ def useIGRFonly():
     return
     
 def getGaussCoef(radius):
-    
+    return gRE,hRE
     """IGRF only for testing pruposes"""
-    if (radius>=ocb):
+    """if (radius>=ocb):
        # print("RE used",radius)
         return gRE,hRE
     elif (radius <=icb):
       #  print("ICB used",radius)
         return gICB,hICB
     else:
-        print("Error in radius",radius)
+        print("Error in radius",radius)"""
 
 def sphericalHarmoAnalysis(x):
     """Evaluates the spherical harmonics equation for the magnetic field, with degree n
@@ -109,7 +109,7 @@ def sphericalHarmoAnalysis(x):
     result=Point3D(0,0,0)
 
     """Get Gaus Coef respective to radius""" 
-    degree=95
+    degree=45
     g,h = getGaussCoef(v._z)
     Lp = SN_Legendre(math.cos(v._x),degree)
     dLp = deltaSN_Legendre(Lp,degree)
