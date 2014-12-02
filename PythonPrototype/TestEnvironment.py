@@ -194,6 +194,8 @@ def project_on_boundary(x,v,r):
     return toCartesian(sp)
 
 
+
+
 def testSHA_SL(x,y,z,mx,my,mz):
     #loadGaussCoefIGRF("../GausCoef.txt")
     loadGaussCoefSimu("../../Gauss_RE.dat","../../Gauss_ICB.dat")

@@ -53,6 +53,22 @@ isOuterCore = False
 isMantle = False
 
 
+def testSphericalHarmo():
+    """ define an input array of points here"""
+    loadGaussCoefSimu("../../Gauss_RE.dat","../../Gauss_ICB.dat")
+    ps = []
+    for phi in range(10,2*3141,200):
+        for theta in range(10,3141,100):
+            for r in range (1537,10000,300):
+                ps.append(toCartesian(Point3D(phi/1000.0,theta/1000.0,r/1000.0)))
+    
+    for p in ps:
+        Legendre = SN_Legendre(math.cos(p._x),95)
+        #print("Legendre funtion at Pos p: ", p, Legendre )
+        deltaLegendre = deltaSN_Legendre(Legendre,95)
+        #print("Derivation of Legendre funtion at Pos p: ", p, deltaLegendre )
+        sph = sphericalHarmoAnalysis(p)
+        print("Result of Spherical Harmo Equation at Pos p:", sph )
 
 def setData(data):
     global g_data
@@ -109,7 +125,7 @@ def sphericalHarmoAnalysis(x):
     result=Point3D(0,0,0)
 
     """Get Gaus Coef respective to radius""" 
-    degree=45
+    degree=95
     g,h = getGaussCoef(v._z)
     Lp = SN_Legendre(math.cos(v._x),degree)
     dLp = deltaSN_Legendre(Lp,degree)
