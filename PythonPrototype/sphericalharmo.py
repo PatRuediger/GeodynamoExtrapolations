@@ -68,7 +68,7 @@ def testSphericalHarmo():
         deltaLegendre = deltaSN_Legendre(Legendre,95)
         #print("Derivation of Legendre funtion at Pos p: ", p, deltaLegendre )
         sph = sphericalHarmoAnalysis(p)
-        print("Result of Spherical Harmo Equation at Pos p:", sph )
+        print("Result of Spherical Harmo Equation at Pos p:",p, sph )
 
 def setData(data):
     global g_data
@@ -125,7 +125,7 @@ def sphericalHarmoAnalysis(x):
     result=Point3D(0,0,0)
 
     """Get Gaus Coef respective to radius""" 
-    degree=95
+    degree=30
     g,h = getGaussCoef(v._z)
     Lp = SN_Legendre(math.cos(v._x),degree)
     dLp = deltaSN_Legendre(Lp,degree)
@@ -181,7 +181,11 @@ def SN_Legendre(x,degree):
     """Schmid Normalized Legendrefunction
        returns a 2D Array with evaluated Legendre functions at position x
        use as L(m,l,x) = p_sn[m,l]""" 
-    p_sn=[[0 for xl in range(degree)]*degree for xl in range(degree)]
+    p_sn=[[0.0 for xl in range(degree)]*degree for xl in range(degree)]
+    p_sn[0][0] = 1.0
+    p_sn[0][1] = cos(x)
+    for l in range(2,degree):
+        p_sn[0][l]=p_sn[0][l-1] * float(2*l-1)/float(l) * cos(x)- p_sn[0][l-2] * float(l-1)/float(l)        
     """Normalization"""
     df=[1.0 for xl in range(degree+1)]    
     for m in range(1,degree):   
@@ -193,8 +197,7 @@ def SN_Legendre(x,degree):
         
         if( m < degree-1):
             for l in range(m+2,degree):
-                df[l]=( cos(x) * float(2*l-1) * df[l-1] - sqrt( float( (l-1)*(l-1) - m*m )) * df[l-2] ) / sqrt( float( l*l - m*m ))
-        
+                df[l]=( cos(x) * float(2*l-1) * df[l-1] - sqrt( float( (l-1)*(l-1) - m*m )) * df[l-2] ) / sqrt( float( l*l - m*m ))        
         for l in range(m,degree):
             p_sn[m][l]=df[l] * sin(x)**m
     return p_sn
@@ -203,7 +206,7 @@ def deltaSN_Legendre(p_sn,degree):
    """Schmid Normalized Legendrefunction
    returns a 2D Array with evaluated Legendre functions at position x
    use as L(m,l,x) = p_sn[m,l]""" 
-   dp_sn=[[0 for xl in range(degree)]*degree for xl in range(degree)]
+   dp_sn=[[0.0 for xl in range(degree)]*degree for xl in range(degree)]
    """Normalization"""
    dp_sn[0][0] = 0.0
    for l in range(1,degree):

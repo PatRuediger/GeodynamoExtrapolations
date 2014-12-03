@@ -104,7 +104,8 @@ def test_OC_only(theta,phi,r,direction,data,tmax=1.0e+10,t0=0.8e-5,max_steps=500
         if(((toSpherical(xf)._z)>=1.537983852128)):
             outOfBounds = True
             break
-        dtmax=data._currentCell.gridSize()/2.0
+        #dtmax=data._currentCell.gridSize()/2.0
+        dtmax = 1.0e-5
         if(t0>dtmax):           
             t0=dtmax
         needAdapt= adaptStep(vf,vf2,t0)[0]
@@ -268,7 +269,7 @@ def testBoundaryVecField():
         print(float(i)*100/len(xf_mantle))
         #print("OC>>>Pos:",toSpherical(x_oc) )
         print("input pos: ", ds.toSpherical(x_oc))
-        v = data.getValueNNInt(x_oc,1.0)
+        v = data.getValueKDTree(x_oc,1.0)
         if((i*100.0/len(xf_oc))%10)==0: print("Evaluation reached: " +str(i*100.0/len(xf_oc)) +"%")
        # print("OC>>>Pos:",x_oc ,"Value:",v)
         vf_oc.append(v)
@@ -490,11 +491,11 @@ def main():
     #VisGridConcave()
     #GridTestVis(5000)                              ##define number of Cells to be visible
     #DS_compared_Vecfield()
-    #testBoundaryVecField2()
-    testRK_Dipol_SL(2.8,0.2,2.8,"forward")
+    #testBoundaryVecField()
+    #testRK_Dipol_SL(2.8,0.2,2.8,"forward")
     """Test of Extrapolation Method """
-    #for phi in range(10,2*3141,500):
-       # testRK_Dipol_SL(1.4,phi/1000.0,2.8,"forward")
+    for phi in range(10,2*3141,500):
+       testRK_Dipol_SL(2.8,phi/1000.0,2.8,"forward")
        # testRK_Dipol_SL(0.3,phi/1000.0,2.3,"forward")
      #  testRK_Dipol_SL(0.6,phi/1000.0,2.3,"forward")
     """Test of whole Streamline Vis""" 
