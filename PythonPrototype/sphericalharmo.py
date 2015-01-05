@@ -79,14 +79,14 @@ def evalSHA(x,dt):
     global isMantle            
     if ((toSpherical(x)._z)<=ocb) and ((toSpherical(x)._z)>icb):
         result = g_data.getValueKDTree(x,dt) 
-        #if not isOuterCore:print(">>>>>>>>>>>>>>>>>>Going from Mantle to OC: Pos:",toSpherical(x)," Value:",toSpherical(result))
+        if not isOuterCore:print(">>>>>>>>>>>>>>>>>>Going from Mantle to OC: Pos:",toSpherical(x)," Value:",toSpherical(result))
         #print("OC")
         isOuterCore = True
         isMantle = False
         return result
     else:
         result = sphericalHarmoAnalysis(x)
-    #if not isMantle:print(">>>>>>>>>>>>>>>>>>Going from OC to Mantle: Pos:",toSpherical(x)," Value:",toSpherical(result))
+    if not isMantle:print(">>>>>>>>>>>>>>>>>>Going from OC to Mantle: Pos:",toSpherical(x)," Value:",toSpherical(result))
     #print("Mantle")
     isMantle = True
     isOuterCore = False         
@@ -354,6 +354,37 @@ def toCartesianVecfield(x,v):
     return vf
 
 
+def adaptStepGearHairer(v1,v2,dt):
+    """
+    Input Position, Vector, time(refering to v(t) as a vectorfield), current "time" t, an initial stepsize dt 
+    Output boolean,adapted stepsize
+    Domain specific knowledge regarding the Vectorfield can be added here, to speed up the estimation of the stepsize
+    """
+    #Error respective to cos(angle) with angle between the two steps 
+    # 1%    = 0.9980267284282716
+    # 0.1 % = 0.999980261
+    tol = 0.9991
+    tol_up = tol * 0.999
+    tol_down = tol *1.00001
+    error = datastructure2.dot(v1,v2)/( v1._length() * v2._length() ) 
+    if error == 1.0: error = 1.0- 1.0e-16 #to get rid of numerical errors, double precision
+    #print(error)
+   # v = 0.0001 #tolerance scaling
+    dtn = dt
+    #error handling is inverted as it refers to the cos(angle) the nearer it is to 1.0 the better
+    if error < tol_up: 
+        #print(datastructure.dot(v1,v2)/(v1._length()*v2._length() ),"error too high")
+        dtn= ( (1.0-tol) / (1.0-error) )**(1.0/4.0)  * dt
+        print("stepsize decreased",dtn)
+        return True, dtn
+    #increase stepsize when error is very small
+    elif error > tol_down:
+     #   print(datastructure.dot(v1,v2)/(v1._length()*v2._length() ),"error too low")
+        dtn= ( (1.0-tol) / (1.0-error) )**(1.0/4.0)  * dt
+        print("stepsize increased",dtn)        
+        return True, dtn
+    else:
+        return False, dtn    
     
 def adaptStep(v1,v2,dt):
     """
@@ -364,20 +395,21 @@ def adaptStep(v1,v2,dt):
     #Error respective to cos(angle) with angle between the two steps 
     # 1%    = 0.9980267284282716
     # 0.1 % = 0.999980261
-    err_up =  0.9999    
-    err_down = 0.99999
+    err_up =  0.999    
+    err_down = 0.9999
     dtn = dt    
     #decrease stepsize when error is too high 
+    #error handling is inverted as it refers to the cos(angle) the nearer it is to 1.0 the better
     if (datastructure2.dot(v1,v2)/( v1._length() * v2._length() ) ) < err_up: 
         #print(datastructure.dot(v1,v2)/(v1._length()*v2._length() ),"error too high")
-        dtn/= 5.0
-        #print("stepsize decreased",dtn)
+        dtn/= 10.0
+        print("stepsize decreased",dtn)
         return True, dtn
     #increase stepsize when error is very small
     elif (datastructure2.dot(v1,v2)/(v1._length()*v2._length() ) ) > err_down:
      #   print(datastructure.dot(v1,v2)/(v1._length()*v2._length() ),"error too low")
-        dtn*=2.0
-        #print("stepsize increased",dtn)        
+        dtn*=9.0
+        print("stepsize increased",dtn)        
         return True, dtn
     else:
         return False, dtn

@@ -361,14 +361,14 @@ def Draw ():
     glMultMatrixf(g_Transform);										# // NEW: Apply Dynamic Transform
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable( GL_BLEND );
-    glColor4f(0.8,0.1,1.0,1.0);
-    drawVectorfield(g_vecFieldPos,g_vecFieldValue,0.3)
-    glColor4f(0.1,0.8,1.0,1.0);
-    drawVectorfield(g_vecFieldPos2,g_vecFieldValue2,0.3)
+    #glColor4f(0.8,0.1,1.0,1.0);
+    #drawVectorfield(g_vecFieldPos,g_vecFieldValue,0.3)
+    #glColor4f(0.1,0.8,1.0,1.0);
+    #drawVectorfield(g_vecFieldPos2,g_vecFieldValue2,0.3)
     glColor4f(1.0,0.1,0.1,1.0)
     drawStreamLines()
-    glEnable(GL_CULL_FACE)
-    drawWireFrame()
+    #glEnable(GL_CULL_FACE)
+    #drawWireFrame()
     #streamLine(g_streamLinePos,g_streamLineValue)
     glPopMatrix();													# // NEW: Unapply Dynamic Transform
     

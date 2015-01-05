@@ -81,12 +81,26 @@ def testRK_Dipol_SL(theta,phi,r,direction,tmax=1.0e+10,t0=0.8e-3,max_steps=10000
     print("i",i,"sl[i-1]",toSpherical(sl[i-1]),"vl[i-1]",toSphericalVecfield(toSpherical(sl[-1]),vl[i-1]))
     Vis.addStreamLine(sl,vl)
     return
+
+def getSmallestGridSize():
+    data = ds.VTKData()
+    data.loadFile('C:/out.1200.vtk')
+    data.builtKDTree()
+    l_grid=[]
+    for ver in data._vertexList:
+        xtupple = (ver._pos._x,ver._pos._y,ver._pos._z)
+        d,ni = data._kdTree.query(xtupple,1) ## return the indices of the nearest neigbhour, d and ni are arrays
+        l_grid.append(d)
+    print(min(l_grid))
    
-def test_OC_only(theta,phi,r,direction,data,tmax=1.0e+10,t0=0.8e-5,max_steps=5000):
+def test_OC_only(theta,phi,r,direction,data,tmax=1.0e+10,t0=1.0e-10,max_steps=5000):
     sph.setData(data)
     sl=[]
     vl=[]
     t=t0
+    """dtmin is dependent on the OS (32 or 64 bit)"""
+    dtmin=1.0e-16
+    dtmax = 1.0e-10
     tpr0 = ds.Point3D(theta, phi,r)
     xyz0 = toCartesian(tpr0)
     v0 = evalSHA(xyz0, None)
@@ -94,7 +108,6 @@ def test_OC_only(theta,phi,r,direction,data,tmax=1.0e+10,t0=0.8e-5,max_steps=500
     vl.append(v0)
     nextVal=v0
     nextPos=xyz0
-    max_step=4.0e-5
     print("Start new Streamline with:", tpr0,toSphericalVecfield(tpr0,v0),direction)
     #print(tpr0,toSphericalVecfield(tpr0,v0))
     i= 0
@@ -105,15 +118,24 @@ def test_OC_only(theta,phi,r,direction,data,tmax=1.0e+10,t0=0.8e-5,max_steps=500
             outOfBounds = True
             break
         #dtmax=data._currentCell.gridSize()/2.0
-        dtmax = 1.0e-5
+        
+        if(t0<dtmin):           
+            t0=dtmin
         if(t0>dtmax):           
             t0=dtmax
-        needAdapt= adaptStep(vf,vf2,t0)[0]
+        needAdapt= adaptStepGearHairer(vf,vf2,t0)[0]
+        print("Before while", needAdapt)
         while needAdapt:
-            needAdapt, t0 = adaptStep(vf,vf2,t0)
+            needAdapt, t0 = adaptStepGearHairer(vf,vf2,t0)
+            print("inside while", needAdapt)
             if(t0>dtmax):         
                 t0=dtmax
-                needAdapt = False                    
+                needAdapt = False
+                print("stepsize adapted 2") 
+            if(t0<dtmin):           
+                t0=dtmin
+                needAdapt = False
+                print("stepsize adapted 3")                    
             xf,vf,t2,xf2,vf2,tf2 = rk4(xf,vf,evalSHA,t,t0,direction)
             if(((toSpherical(xf)._z)>=1.537983852128)):
                 outOfBounds = True
@@ -123,7 +145,8 @@ def test_OC_only(theta,phi,r,direction,data,tmax=1.0e+10,t0=0.8e-5,max_steps=500
         t=t2
         sl.append(xf)
         vl.append(vf)
-        if(i%100)==0:print("step #",i,toSpherical(xf), vf,t)
+        """if(i%100)==0:"""
+        print("--------- step #",i,toSpherical(xf), vf,t,"-------------")
         i+=1
     #print("i",i,"sl[i-1]",toSpherical(sl[i-1]),"vl[i-1]",toSphericalVecfield(toSpherical(sl[-1]),vl[i-1]))
     Vis.addStreamLine(sl,vl)
@@ -484,25 +507,25 @@ def computeCellVolumes(data):
     return cell_List        
 
 def main():
-    #data= ds.VTKData()
-    #data = loadData('C:/out.1200.vtk')
+    data= ds.VTKData()
+    data = loadData('C:/out.1200.vtk')
     #Vis.built_cm_rainbow(data)
-    #data.builtKDTree()
+    data.builtKDTree()
     #VisGridConcave()
     #GridTestVis(5000)                              ##define number of Cells to be visible
     #DS_compared_Vecfield()
     #testBoundaryVecField()
     #testRK_Dipol_SL(2.8,0.2,2.8,"forward")
     """Test of Extrapolation Method """
-    for phi in range(10,2*3141,500):
-       testRK_Dipol_SL(2.8,phi/1000.0,2.8,"forward")
+    #for phi in range(10,2*3141,500):
+       #testRK_Dipol_SL(2.8,phi/1000.0,2.8,"forward")
        # testRK_Dipol_SL(0.3,phi/1000.0,2.3,"forward")
      #  testRK_Dipol_SL(0.6,phi/1000.0,2.3,"forward")
     """Test of whole Streamline Vis""" 
     #for phi in range(200,2*3141,600):
      #   test_OC_only(1.4,phi/1000.0,0.7,"forward",data)
       #  test_OC_only(1.4,phi/1000.0,0.7,"backward",data)
-    #test_OC_only(1.4,0.6,0.7,"forward",data)
+    test_OC_only(1.4,0.6,0.7,"forward",data)
     #test_OC_only(1.0,0.6,1.0,"forward",data)
     ##----degenereted case
     #testRK_Whole_SL(1.4,0.6,1.1,"forward")

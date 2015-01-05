@@ -427,11 +427,10 @@ class VTKData:
 
     def getValueKDTree(self,x,dt):
         xtupple = (x._x,x._y,x._z)
-        d,ni = self._kdTree.query(xtupple,50) ## return the indices of the nearest neigbhour, d and ni are arrays
+        d,ni = self._kdTree.query(xtupple,10) ## return the indices of the nearest neigbhour, d and ni are arrays
         #print(max(d))
         for ver in ni:
             nnVertex = self._vertexList[ver]
-            #print(nnVertex._partOfCell)
             for neighbourID in nnVertex._partOfCell:
                 self._currentCell = self._cellList[neighbourID]
                 isFound,intPoint, nextCell = self._currentCell.trilinear(x)
@@ -585,7 +584,7 @@ class VTKData:
                    if ((value_counter*100.0/self._numVert) % 10)==0:
                         print('Values loading reached: ' + str(value_counter*100.0/self._numVert) + '%')
                    value_counter+=1
-     #   if(file.closed):self.computeCellTopology()
+        if(file.closed): self.computeCellTopology()
 
     def computeCellTopology(self):
         """ Computes a basic cell topology, based on cells which are sharing a vertex
@@ -607,10 +606,10 @@ class VTKData:
             if((cellcount*100.0/self._numCells)%10) ==0:
                 print('Cell topology computition reached: ' + str(cellcount*100.0/self._numCells) + '%')
                 print("NeighbourList for Cell :", cell._ID,len(cell._neighbours))
-        for cell in self._cellList:
-            cell.computeFaceNeighbours(self)
-            if len(set(cell._verts))<8:
-                print(set(cell._verts), cell._ID)
+        #for cell in self._cellList:
+           # cell.computeFaceNeighbours(self)
+          #  if len(set(cell._verts))<8:
+           #     print(set(cell._verts), cell._ID)
         #free memory and delete partofCell list
         #li_length=[]
         #for vertex in self._vertexList:
