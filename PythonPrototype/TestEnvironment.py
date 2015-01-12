@@ -104,6 +104,8 @@ def test_OC_only(theta,phi,r,direction,data,tmax=1.0e+10,t0=1.0e-10,max_steps=50
     tpr0 = ds.Point3D(theta, phi,r)
     xyz0 = toCartesian(tpr0)
     v0 = evalSHA(xyz0, None)
+    dtmax = data._CurrentMaxStep
+    #print("dtmax_ first:",dtmax)
     sl.append(xyz0)
     vl.append(v0)
     nextVal=v0
@@ -117,8 +119,9 @@ def test_OC_only(theta,phi,r,direction,data,tmax=1.0e+10,t0=1.0e-10,max_steps=50
         if(((toSpherical(xf)._z)>=1.537983852128)):
             outOfBounds = True
             break
-        #dtmax=data._currentCell.gridSize()/2.0
-        
+       
+        dtmax = data._CurrentMaxStep
+        print("dtmax:",dtmax)
         if(t0<dtmin):           
             t0=dtmin
         if(t0>dtmax):           

@@ -66,6 +66,32 @@ def testInterpolation():
     #temp = cell1.trilinear(p)
     #print(temp)
 
+def testGridlen():
+    DS = VTKData()
+    DS.loadFile('C:/out.1200.vtk')
+    DS.builtKDTree()
+    
+    Cell_ID =1505
+    cell = DS._cellList[Cell_ID]
+    DS._currentCell = cell
+    verts=[]
+    #print("Vertex positions of Cell:",Cell_ID,verts)
+    print("minimal Edge lenth of cell:", cell.gridSize())
+    cell.computeFaceNeighbours(DS)
+    for nb in cell._faceNeighbours:
+       print(nb._ID)
+    """for ver in DS._currentCell._verts:
+        for neighbourID in ver._partOfCell:
+            ncell = DS._cellList[neighbourID]
+            verts=[]
+            for ver in ncell._verts:
+                verts.append(ver._pos)      
+            #print("Vertex positions of Cell:",neighbourID,verts)
+            print("minimal Edge lenth of cell:", ncell.gridSize())
+    
+    DS.computeCurrentEdgeMin()        
+    print("1st Grade neighbour Edge Minimum:",DS.computeCurrentEdgeMin() )"""
+    
 """Dot/Scalar Product for 3D Vectors"""
 def dot(a,b):
         a0 = Point3D(0,0,0)
@@ -186,6 +212,8 @@ class Cell:
     #To access the cells in the list, you must use ID-1
     _neighbours=[]
 
+
+    
 #---class Methods
     # Constructor method
     def __init__(self,ID,v0,v1,v2,v3,v4,v5,v6,v7):
@@ -234,18 +262,18 @@ class Cell:
         if len(bottom) >1 : print("multiple bottom Face Neighbours for Cell", self._ID)   
         #print(front,back,left,right,top,bottom)    
         if len(front) !=0:
-            self._faceNeighbours.append(data._cellList[front[0]])
+            self._faceNeighbours[0] = data._cellList[front[0]]
         if len(back) !=0:
-            self._faceNeighbours.append(data._cellList[back[0]])
+            self._faceNeighbours[1] = data._cellList[back[0]]
         if len(left) !=0:
-            self._faceNeighbours.append(data._cellList[left[0]])
+            self._faceNeighbours[2] = data._cellList[left[0]]
         if len(right) !=0:
-            self._faceNeighbours.append(data._cellList[right[0]])
+            self._faceNeighbours[3] = data._cellList[right[0]]
         if len(top) !=0:
-            self._faceNeighbours.append(data._cellList[top[0]])
+            self._faceNeighbours[4] = data._cellList[top[0]]
         if len(bottom) !=0:
-            self._faceNeighbours.append(data._cellList[bottom[0]])
-    
+            self._faceNeighbours[5] = data._cellList[bottom[0]]
+       # print(self._faceNeighbours)    
             
     def addCell(self,ID,v0,v1,v2,v3,v4,v5,v6,v7):
         newCell = Cell(ID,v0,v1,v2,v3,v4,v5,v6,v7)
@@ -253,26 +281,79 @@ class Cell:
         return self._nextCell
 
 
-    ## out of date method!!!
+    def getMaxStep_NextCell(self,a,v):
+        """returns the maximal stepsize and the next cell to interpolate with"""
+        CP,nextCell = self.computeCutWithFace(a,v)
+        maxstep = (a.sub(CP))._length() + 1.5e-16
+        return abs(maxstep),nextCell
+        
+    def computeCutWithFace(self,a,v):
+        """v is the vetor direction and a the start point
+        returns the face neighbouring cell and CP
+        works only if face neighbours where computed before"""
+        self.computeCellNormals()
+        ##front face check
+        n= self._faceNormals[0]
+        p = self._verts[1]._pos
+        if(dot(n,v) != 0.0):
+            k = ( dot(n,p) - dot(n,a) ) / dot(n,v)
+            CP = a.add(v.mult(k))
+            if (k!=0): return self._faceNeighbours[0], CP
+        ##back face check
+        n= self._faceNormals[1]
+        p = self._verts[0]._pos
+        if(dot(n,v) != 0.0):
+            k = ( dot(n,p) - dot(n,a) ) / dot(n,v)
+            CP = a.add(v.mult(k))
+            if (k!=0): return self._faceNeighbours[1], CP
+        ##left face check
+        n= self._faceNormals[2]
+        p = self._verts[0]._pos
+        if(dot(n,v) != 0.0):
+            k = ( dot(n,p) - dot(n,a) ) / dot(n,v)
+            CP = a.add(v.mult(k))
+            if (k!=0): return self._faceNeighbours[2], CP
+        ##right face check
+        n= self._faceNormals[3]
+        p = self._verts[3]._pos
+        if(dot(n,v) != 0.0):
+            k = ( dot(n,p) - dot(n,a) ) / dot(n,v)
+            CP = a.add(v.mult(k))
+            if (k!=0): return self._faceNeighbours[3], CP    
+        ##top face check
+        n= self._faceNormals[4]
+        p = self._verts[4]._pos
+        if(dot(n,v) != 0.0):
+            k = ( dot(n,p) - dot(n,a) ) / dot(n,v)
+            CP = a.add(v.mult(k))
+            if (k!=0): return self._faceNeighbours[4], CP
+        ##bottom face check
+        n= self._faceNormals[0]
+        p = self._verts[1]._pos
+        if(dot(n,v) != 0.0):
+            k = ( dot(n,p) - dot(n,a) ) / dot(n,v)
+            CP = a.add(v.mult(k))
+            if (k!=0): return self._faceNeighbours[5], CP
+      
     def computeCellNormals(self):
         """All normals are oriented to point inwards
         """
-        self._faceNormals[0] = cross(self._verts[0]._pos.sub(self._verts[3]._pos) ,self._verts[2]._pos.sub(self._verts[3]._pos) ) 
+        self._faceNormals[0] = cross(self._verts[2]._pos.sub(self._verts[1]._pos) ,self._verts[5]._pos.sub(self._verts[1]._pos) ) 
         self._faceNormals[0] = self._faceNormals[0].mult(1.0/self._faceNormals[0]._length())
         
-        self._faceNormals[1] = cross(self._verts[6]._pos.sub(self._verts[7]._pos) ,self._verts[4]._pos.sub(self._verts[7]._pos) ) 
+        self._faceNormals[1] = cross(self._verts[4]._pos.sub(self._verts[0]._pos) ,self._verts[3]._pos.sub(self._verts[0]._pos) ) 
         self._faceNormals[1] = self._faceNormals[1].mult(1.0/self._faceNormals[1]._length())
         
-        self._faceNormals[2] = cross(self._verts[0]._pos.sub(self._verts[1]._pos) ,self._verts[5]._pos.sub(self._verts[1]._pos) ) 
+        self._faceNormals[2] = cross(self._verts[5]._pos.sub(self._verts[1]._pos) ,self._verts[0]._pos.sub(self._verts[1]._pos) ) 
         self._faceNormals[2] = self._faceNormals[2].mult(1.0/self._faceNormals[2]._length())    
 
-        self._faceNormals[3] = cross(self._verts[2]._pos.sub(self._verts[3]._pos) ,self._verts[7]._pos.sub(self._verts[3]._pos) ) 
+        self._faceNormals[3] = cross(self._verts[2]._pos.sub(self._verts[6]._pos) ,self._verts[7]._pos.sub(self._verts[6]._pos) ) 
         self._faceNormals[3] = self._faceNormals[3].mult(1.0/self._faceNormals[3]._length())
 
-        self._faceNormals[4] = cross(self._verts[1]._pos.sub(self._verts[2]._pos) ,self._verts[6]._pos.sub(self._verts[2]._pos) ) 
+        self._faceNormals[4] = cross(self._verts[6]._pos.sub(self._verts[5]._pos) ,self._verts[4]._pos.sub(self._verts[5]._pos) ) 
         self._faceNormals[4] = self._faceNormals[4].mult(1.0/self._faceNormals[4]._length())
 
-        self._faceNormals[5] = cross(self._verts[3]._pos.sub(self._verts[0]._pos) ,self._verts[4]._pos.sub(self._verts[0]._pos) ) 
+        self._faceNormals[5] = cross(self._verts[1]._pos.sub(self._verts[2]._pos) ,self._verts[3]._pos.sub(self._verts[2]._pos) ) 
         self._faceNormals[5] = self._faceNormals[5].mult(1.0/self._faceNormals[5]._length())
         #print(self._faceNormals)
         return
@@ -353,11 +434,37 @@ class Cell:
                 return True,(alpha,beta,gamma)
     
     def gridSize(self):
-        bounds = self.boundaries()
-        gridlen = []
-        gridlen.append(bounds[3]-bounds[0])
-        gridlen.append(bounds[4]-bounds[1])
-        gridlen.append(bounds[5]-bounds[2])
+        ## compute edge lenghts
+        gridlen =[]
+        #bottom edges
+        e=self._verts[0]._pos.sub(self._verts[1]._pos)
+        gridlen.append(e._length())    
+        e=self._verts[1]._pos.sub(self._verts[2]._pos)
+        gridlen.append(e._length()) 
+        e=self._verts[2]._pos.sub(self._verts[3]._pos)
+        gridlen.append(e._length())
+        e=self._verts[3]._pos.sub(self._verts[0]._pos)
+        gridlen.append(e._length()) 
+        
+        #top edges
+        e=self._verts[4]._pos.sub(self._verts[5]._pos)
+        gridlen.append(e._length())    
+        e=self._verts[5]._pos.sub(self._verts[6]._pos)
+        gridlen.append(e._length()) 
+        e=self._verts[6]._pos.sub(self._verts[7]._pos)
+        gridlen.append(e._length())
+        e=self._verts[7]._pos.sub(self._verts[4]._pos)
+        gridlen.append(e._length()) 
+        
+        #side edges
+        e=self._verts[5]._pos.sub(self._verts[1]._pos)
+        gridlen.append(e._length())    
+        e=self._verts[4]._pos.sub(self._verts[0]._pos)
+        gridlen.append(e._length()) 
+        e=self._verts[7]._pos.sub(self._verts[3]._pos)
+        gridlen.append(e._length())
+        e=self._verts[6]._pos.sub(self._verts[2]._pos)
+        gridlen.append(e._length()) 
         return min(gridlen)
 
     def trilinear_pos(self,a,b,c):
@@ -410,13 +517,29 @@ class VTKData:
     _cellList =[]
     _valueNames =[]
     _kdTree = None
+    _firstSearch = True
+    _CurrentMaxStep = 1.0e-12
 
 #---class Methods
     # Constructor method
     def __init__(self):
           return
-           
-    
+     
+     
+    def getNextCell_StepSize(self,a,v):
+        """ input is current pos a and vector v"""
+        stepsize,nextCell = self._currentCell.getMaxStep_NextCell(a,v)
+        return stepsize,nextCell
+        
+    def computeCurrentEdgeMin(self):
+        edgeMinList=[]
+        edgeMinList.append(self._currentCell.gridSize())
+        for ver in self._currentCell._verts:
+            for neighbourID in ver._partOfCell:
+                edgeMinList.append(self._cellList[neighbourID].gridSize())
+        print("current 1st Grade Neighbour minimal edge length: ", min(edgeMinList))
+        return min(edgeMinList)
+        
     def builtKDTree(self):
         print("Built KD- Tree ... ")
         vertexListTripples = []
@@ -429,18 +552,26 @@ class VTKData:
         xtupple = (x._x,x._y,x._z)
         d,ni = self._kdTree.query(xtupple,10) ## return the indices of the nearest neigbhour, d and ni are arrays
         #print(max(d))
+        if(not self._firstSearch):
+            return self.getValue(x,dt)
         for ver in ni:
             nnVertex = self._vertexList[ver]
             for neighbourID in nnVertex._partOfCell:
                 self._currentCell = self._cellList[neighbourID]
-                isFound,intPoint, nextCell = self._currentCell.trilinear(x)
-                if(isFound): 
+                isFound,intPoint, self._currentCell = self._currentCell.trilinear(x)
+                if(isFound):
+                    self._CurrentMaxStep, self._currentCell = self.getNextCell_StepSize(x,intPoint)
+                    self._firstSearch = False
+                    print("Cell Found", self._currentCell._ID)
                     return intPoint
         print("nearest neighbour didn't help",toSpherical(x))
         for cell in self._cellList:
-            isFound,intPoint, nextCell = cell.trilinear(x)
+            cell = self._currentCell
+            isFound,intPoint, self._currentCell = cell.trilinear(x)
             if(isFound):
-                print("Cell Found", cell._ID, intPoint.sub(x)._length())
+                self._CurrentMaxStep, self._currentCell = self.getNextCell_StepSize(x,intPoint)
+                self._firstSearch = False
+                print("Cell Found", cell._ID, self._currentCell._ID)
                 return intPoint
         print("Cell not Found",x)        
  
@@ -471,7 +602,8 @@ class VTKData:
      #   print("Search for Cell with point: ", toSpherical(x))
         isFound,intPoint,self._currentCell = self._currentCell.trilinear(x)
         if(isFound): 
-           # print(self._currentCell._ID,isFound,"Found in Current Cell")                    
+            print(self._currentCell._ID,isFound,"Found in Current Cell")
+            self._CurrentMaxStep, self._currentCell = self.getNextCell_StepSize(x,intPoint)                    
             return intPoint        
        # print("Searching in neighbours")
         for ver in self._currentCell._verts:
@@ -479,15 +611,18 @@ class VTKData:
                 neighbour = self._cellList[neighbourID]
                 isFound,intPoint,self._currentCell = neighbour.trilinear(x)
                 if(isFound):
-                    #print("Celllist of Brute Force",ver._partOfCell)
+                    print("Celllist of Brute Force",ver._partOfCell)
+                    self._CurrentMaxStep, self._currentCell = self.getNextCell_StepSize(x,intPoint)
                     return intPoint
        #if not found in neighbouring cell - should only be the case, for the first time reaching the outer core
-        for cell in self._cellList:
+        self._firstSearch = True
+        return self.getValueKDTree(x,dt)
+        """for cell in self._cellList:
             #start where the last one was found, makes the next search more easier
             isFound,intPoint,self._currentCell = cell.trilinear(x)
             if(isFound): 
-       #         print(cell._ID,isFound,"Found outside neighbour domain")                    
-                return intPoint
+                print(cell._ID,isFound,"Found outside neighbour domain")                    
+                return intPoint"""
         print("Point not found in dataset")
         
         ## read in data file
@@ -590,7 +725,7 @@ class VTKData:
         """ Computes a basic cell topology, based on cells which are sharing a vertex
             Takes very very long and consumes a lot of memory"""
         cellcount=0
-        print("compute Cell topology .... ")
+        print("compute Cell topology .... ")            
         for cell in self._cellList:
             #contains all neighbours, point, line and face neighbours
             neighbourList=[]
@@ -606,16 +741,13 @@ class VTKData:
             if((cellcount*100.0/self._numCells)%10) ==0:
                 print('Cell topology computition reached: ' + str(cellcount*100.0/self._numCells) + '%')
                 print("NeighbourList for Cell :", cell._ID,len(cell._neighbours))
-        #for cell in self._cellList:
-           # cell.computeFaceNeighbours(self)
-          #  if len(set(cell._verts))<8:
-           #     print(set(cell._verts), cell._ID)
-        #free memory and delete partofCell list
-        #li_length=[]
-        #for vertex in self._vertexList:
-         #   li_length.append(len(vertex._partOfCell))    
-          #  del(vertex._partOfCell[:])
-        #print(max(li_length))
+        cellcount=0
+        for cell in self._cellList:
+            cell.computeFaceNeighbours(self)
+            cell.computeCellNormals()
+            cellcount+=1
+            print('Advanced Cell topology computition reached: ' + str(cellcount*100.0/self._numCells) + '%')
+           
 
     
 
