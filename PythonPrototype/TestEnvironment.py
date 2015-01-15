@@ -140,6 +140,7 @@ def test_OC_only(theta,phi,r,direction,data,tmax=1.0e+10,t0=1.0e-10,max_steps=50
                 needAdapt = False
                 print("stepsize adapted 3")                    
             xf,vf,t2,xf2,vf2,tf2 = rk4(xf,vf,evalSHA,t,t0,direction)
+            dtmax = data._CurrentMaxStep
             if(((toSpherical(xf)._z)>=1.537983852128)):
                 outOfBounds = True
                 break

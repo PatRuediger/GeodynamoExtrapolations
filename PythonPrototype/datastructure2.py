@@ -203,7 +203,7 @@ class Cell:
     _verts =[]
     #Pointer to next Cell
     _nextCell = None
-    
+    _topologyComputed = False
     #ordering: front,back,left,right,top,bottom
     #Face sharing neighbours
     _faceNeighbours =[None]*6
@@ -273,6 +273,7 @@ class Cell:
             self._faceNeighbours[4] = data._cellList[top[0]]
         if len(bottom) !=0:
             self._faceNeighbours[5] = data._cellList[bottom[0]]
+        self._topologyComputed = True
        # print(self._faceNeighbours)    
             
     def addCell(self,ID,v0,v1,v2,v3,v4,v5,v6,v7):
@@ -283,7 +284,7 @@ class Cell:
 
     def getMaxStep_NextCell(self,a,v):
         """returns the maximal stepsize and the next cell to interpolate with"""
-        CP,nextCell = self.computeCutWithFace(a,v)
+        nextCell,CP = self.computeCutWithFace(a,v)
         maxstep = (a.sub(CP))._length() + 1.5e-16
         return abs(maxstep),nextCell
         
@@ -519,6 +520,7 @@ class VTKData:
     _kdTree = None
     _firstSearch = True
     _CurrentMaxStep = 1.0e-12
+    _nextCell = None
 
 #---class Methods
     # Constructor method
@@ -528,8 +530,11 @@ class VTKData:
      
     def getNextCell_StepSize(self,a,v):
         """ input is current pos a and vector v"""
-        stepsize,nextCell = self._currentCell.getMaxStep_NextCell(a,v)
-        return stepsize,nextCell
+        if(not self._currentCell._topologyComputed):
+            self._currentCell.computeFaceNeighbours(self)
+            self._currentCell.computeCellNormals()
+        stepsize,self._nextCell = self._currentCell.getMaxStep_NextCell(a,v)
+        return stepsize,self._nextCell
         
     def computeCurrentEdgeMin(self):
         edgeMinList=[]
@@ -560,7 +565,8 @@ class VTKData:
                 self._currentCell = self._cellList[neighbourID]
                 isFound,intPoint, self._currentCell = self._currentCell.trilinear(x)
                 if(isFound):
-                    self._CurrentMaxStep, self._currentCell = self.getNextCell_StepSize(x,intPoint)
+                    print(x,intPoint)
+                    self._CurrentMaxStep, self._nextCell = self.getNextCell_StepSize(x,intPoint)
                     self._firstSearch = False
                     print("Cell Found", self._currentCell._ID)
                     return intPoint
@@ -569,7 +575,7 @@ class VTKData:
             cell = self._currentCell
             isFound,intPoint, self._currentCell = cell.trilinear(x)
             if(isFound):
-                self._CurrentMaxStep, self._currentCell = self.getNextCell_StepSize(x,intPoint)
+                self._CurrentMaxStep, self._nextCell = self.getNextCell_StepSize(x,intPoint)
                 self._firstSearch = False
                 print("Cell Found", cell._ID, self._currentCell._ID)
                 return intPoint
@@ -603,16 +609,21 @@ class VTKData:
         isFound,intPoint,self._currentCell = self._currentCell.trilinear(x)
         if(isFound): 
             print(self._currentCell._ID,isFound,"Found in Current Cell")
-            self._CurrentMaxStep, self._currentCell = self.getNextCell_StepSize(x,intPoint)                    
-            return intPoint        
+            self._CurrentMaxStep, self._nextCell = self.getNextCell_StepSize(x,intPoint)                    
+            return intPoint
+        isFound,intPoint,self._currentCell = self._nextCell.trilinear(x)
+        if(isFound): 
+            print(self._currentCell._ID,isFound,"Found in cutted neighbour cell")
+            self._CurrentMaxStep, self._nextCell = self.getNextCell_StepSize(x,intPoint)                    
+            return intPoint 
        # print("Searching in neighbours")
         for ver in self._currentCell._verts:
             for neighbourID in ver._partOfCell:
                 neighbour = self._cellList[neighbourID]
                 isFound,intPoint,self._currentCell = neighbour.trilinear(x)
                 if(isFound):
-                    print("Celllist of Brute Force",ver._partOfCell)
-                    self._CurrentMaxStep, self._currentCell = self.getNextCell_StepSize(x,intPoint)
+                    print("Celllist of Brute Force neighbour search",ver._partOfCell)
+                    self._CurrentMaxStep, self._nextCell = self.getNextCell_StepSize(x,intPoint)
                     return intPoint
        #if not found in neighbouring cell - should only be the case, for the first time reaching the outer core
         self._firstSearch = True
@@ -742,11 +753,11 @@ class VTKData:
                 print('Cell topology computition reached: ' + str(cellcount*100.0/self._numCells) + '%')
                 print("NeighbourList for Cell :", cell._ID,len(cell._neighbours))
         cellcount=0
-        for cell in self._cellList:
-            cell.computeFaceNeighbours(self)
-            cell.computeCellNormals()
-            cellcount+=1
-            print('Advanced Cell topology computition reached: ' + str(cellcount*100.0/self._numCells) + '%')
+       # for cell in self._cellList:
+           # cell.computeFaceNeighbours(self)
+          #  cell.computeCellNormals()
+          #  cellcount+=1
+            #print('Advanced Cell topology computition reached: ' + str(cellcount*100.0/self._numCells) + '%')
            
 
     
