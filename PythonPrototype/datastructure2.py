@@ -555,7 +555,7 @@ class VTKData:
 
     def getValueKDTree(self,x,dt):
         xtupple = (x._x,x._y,x._z)
-        d,ni = self._kdTree.query(xtupple,10) ## return the indices of the nearest neigbhour, d and ni are arrays
+        d,ni = self._kdTree.query(xtupple,20) ## return the indices of the nearest neigbhour, d and ni are arrays
         #print(max(d))
         if(not self._firstSearch):
             return self.getValue(x,dt)
@@ -566,18 +566,19 @@ class VTKData:
                 isFound,intPoint, self._currentCell = self._currentCell.trilinear(x)
                 if(isFound):
                     print(x,intPoint)
-                    self._CurrentMaxStep, self._nextCell = self.getNextCell_StepSize(x,intPoint)
-                    self._firstSearch = False
+                    #self._CurrentMaxStep, self._nextCell = self.getNextCell_StepSize(x,intPoint)
+                    #self._firstSearch = False
                     print("Cell Found", self._currentCell._ID)
                     return intPoint
         print("nearest neighbour didn't help",toSpherical(x))
         for cell in self._cellList:
-            cell = self._currentCell
+            self._currentCell = cell
             isFound,intPoint, self._currentCell = cell.trilinear(x)
             if(isFound):
-                self._CurrentMaxStep, self._nextCell = self.getNextCell_StepSize(x,intPoint)
-                self._firstSearch = False
                 print("Cell Found", cell._ID, self._currentCell._ID)
+                #self._CurrentMaxStep, self._nextCell = self.getNextCell_StepSize(x,intPoint)
+                #self._firstSearch = False
+
                 return intPoint
         print("Cell not Found",x)        
  

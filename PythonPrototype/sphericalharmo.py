@@ -51,6 +51,7 @@ g_data = None
 isOuterCore = False
    # isInnerCore = False
 isMantle = False
+g_degree = 3
 
 
 def testSphericalHarmo():
@@ -111,6 +112,9 @@ def getGaussCoef(radius):
     else:
         print("Error in radius",radius)"""
 
+def setDegree(n):
+    global g_degree
+    g_degree=n
 def sphericalHarmoAnalysis(x):
     """Evaluates the spherical harmonics equation for the magnetic field, with degree n
     @Input: Point3D Position
@@ -125,8 +129,9 @@ def sphericalHarmoAnalysis(x):
     result=Point3D(0,0,0)
 
     """Get Gaus Coef respective to radius""" 
-    degree=30
+    degree=g_degree
     g,h = getGaussCoef(v._z)
+
     Lp = SN_Legendre(math.cos(v._x),degree)
     dLp = deltaSN_Legendre(Lp,degree)
     """for l in range(1,n):
@@ -138,10 +143,10 @@ def sphericalHarmoAnalysis(x):
             result._z+= (l +1)*((ar/v._z)**(l +2))*SN(m,l,cos(v._x))*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
     """
     """Using implicit Legendre"""
-    for l in range(1,degree):
+    for l in range(1,degree+1):
         for m in range(l+1):
-            result._x+= -((ar/v._z)**(l +2))*(-math.sin(v._x))*dLp[l][m]*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
-            result._y+= -(ar/(v._z))**(l +2)*Lp[l][m]*(-g[l][m]*m*math.sin(m*v._y)+h[l][m]*m*math.cos(m*v._y))
+            result._x+= ((ar/v._z)**(l +2))*dLp[l][m]*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
+            result._y+= -(ar/(v._z))**(l +2)* ((Lp[l][m]*m)/math.sin(v._x)) * (g[l][m]*m*math.sin(m*v._y)-h[l][m]*m*math.cos(m*v._y))
             result._z+= (l +1)*((ar/v._z)**(l +2))*Lp[l][m]*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
 
     """    for l in range(1,n+1):
@@ -181,45 +186,50 @@ def SN_Legendre(x,degree):
     """Schmid Normalized Legendrefunction
        returns a 2D Array with evaluated Legendre functions at position x
        use as L(m,l,x) = p_sn[m,l]""" 
-    p_sn=[[0.0 for xl in range(degree)]*degree for xl in range(degree)]
+    p_sn=[[0.0 for xl in range(degree+1)]*(degree+1) for xl in range(degree+1)]
     p_sn[0][0] = 1.0
     p_sn[0][1] = cos(x)
-    for l in range(2,degree):
-        p_sn[0][l]=p_sn[0][l-1] * float(2*l-1)/float(l) * cos(x)- p_sn[0][l-2] * float(l-1)/float(l)        
+    for l in range(2,degree+1):
+        p_sn[0][l]=p_sn[0][l-1] * float(2*l -1)/float(l) * cos(x)- p_sn[0][l-2] * float(l-1)/float(l)        
     """Normalization"""
-    df=[1.0 for xl in range(degree+1)]    
-    for m in range(1,degree):   
+    df=[1.0 for xl in range(degree+1+1)]    
+    for m in range(1,degree+1):   
         #df.insert(m,1.0)
-        for k in range(1,m):
+        for k in range(1,m+1):
             df[m]=df[m] * float(2*k-1) / float(2*k)
-        df[m+1] = sqrt( 2.0 * df[m] * float(2*m+1) ) * cos(x)
+        df[m+1] = sqrt( 2.0 * df[m] * float(2*m +1) ) * cos(x)
         df[m] = sqrt(2.0*df[m])
         
         if( m < degree-1):
-            for l in range(m+2,degree):
-                df[l]=( cos(x) * float(2*l-1) * df[l-1] - sqrt( float( (l-1)*(l-1) - m*m )) * df[l-2] ) / sqrt( float( l*l - m*m ))        
-        for l in range(m,degree):
-            p_sn[m][l]=df[l] * sin(x)**m
+            for l in range(m+2,degree+1):
+                df[l]=( cos(x) * float(2*l -1) * df[l-1] - sqrt( float( (l-1)*(l-1) - m*m )) * df[l-2] ) / sqrt( float( l*l - m*m ))        
+                
+        for l in range(m,degree+1):
+            p_sn[m][l]=df[l]
+            for m1 in range(1,m+1):
+                p_sn[m][l] = p_sn[m][l]*sin(x)
     return p_sn
 
 def deltaSN_Legendre(p_sn,degree):
    """Schmid Normalized Legendrefunction
    returns a 2D Array with evaluated Legendre functions at position x
    use as L(m,l,x) = p_sn[m,l]""" 
-   dp_sn=[[0.0 for xl in range(degree)]*degree for xl in range(degree)]
+   dp_sn=[[0.0 for xl in range(degree+1)]*(degree+1) for xl in range(degree+1)]
    """Normalization"""
    dp_sn[0][0] = 0.0
-   for l in range(1,degree):
+   for l in range(1,degree+1):
        dp_sn[0][l] = - sqrt( float(l*(l+1)/2) ) * p_sn[1][l]
    dp_sn[1][1]=p_sn[0][1]
 
    if degree < 2: return dp_sn
-   for l in range(2,degree):
+   for l in range(2,degree+1):
        dp_sn[1][l]= 0.5 * ( sqrt( float( 2*l*(l+1) ) ) * p_sn[0][l] - sqrt( float((l-1)*(l+2)) ) * p_sn[2][l] )
+       
+   for l in range(2,degree+1):
        dp_sn[l][l]= 0.5 * sqrt(float(2*l))*p_sn[l-1][l]
    if degree <3: return dp_sn
-   for l in range(3,degree):
-       for m in range(2,l-1):
+   for l in range(3,degree+1):
+       for m in range(2,l-1+1):
            dp_sn[m][l] = 0.5* ( sqrt( float( (l+m)*(l-m+1) ) ) *p_sn[m-1][l] - sqrt( float( (l-m)*(l+m+1) ) ) *p_sn[m+1][l] )
    return dp_sn
    
@@ -375,13 +385,13 @@ def adaptStepGearHairer(v1,v2,dt):
     if error < tol_up: 
         #print(datastructure.dot(v1,v2)/(v1._length()*v2._length() ),"error too high")
         dtn= ( (1.0-tol) / (1.0-error) )**(1.0/4.0)  * dt
-        print("stepsize decreased",dtn)
+        #print("stepsize decreased",dtn)
         return True, dtn
     #increase stepsize when error is very small
     elif error > tol_down:
      #   print(datastructure.dot(v1,v2)/(v1._length()*v2._length() ),"error too low")
         dtn= ( (1.0-tol) / (1.0-error) )**(1.0/4.0)  * dt
-        print("stepsize increased",dtn)        
+        #print("stepsize increased",dtn)        
         return True, dtn
     else:
         return False, dtn    
@@ -606,6 +616,8 @@ def loadGaussCoefSimu(filenameRE,filenameICB):
             else:
                 #print("GausCoeffs for ICB Area read")
                 break
+    #for i in range(0,96):        
+       # print(i, "max g:", max(gRE[i]), "max h:", max(hRE[i]))
     return gRE,hRE,gICB,hICB                
 
 def main():
