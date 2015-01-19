@@ -238,7 +238,7 @@ def testBoundaryVecField():
     for theta in range(100,2*3141,700):
         for phi in range(100,3141,350):
             tpr_m = ds.Point3D(theta/1000.0, phi/1000.0, 1.537983852128 + 1.0e-4)
-            tpr_oc = ds.Point3D(theta/1000.0, phi/1000.0, 1.5)
+            tpr_oc = ds.Point3D(theta/1000.0, phi/1000.0, 1.52)
             xyz_m = ds.toCartesian(tpr_m)
             xyz_oc = ds.toCartesian(tpr_oc)
             xf_mantle.append(xyz_m)
@@ -297,8 +297,8 @@ def testBoundaryVecField2():
             xyz_m = toCartesian(tpr_m)
             xf_mantle.append(xyz_m)
             vf_mantle.append(sphericalHarmoAnalysis(xyz_m))
-    print("finised computation")        
-    #Vis.setVectorfield(xf_mantle,vf_mantle)
+    print("finished computation")        
+    Vis.setVectorfield(xf_mantle,vf_mantle)
     Vis.setVectorfield2(xf_oc,vf_oc)
     return    
 
@@ -424,7 +424,7 @@ def main():
 
     """Test of CMB behaviour, critical regions"""
     sph.setDegree(95)    
-    testBoundaryVecField()
+    testBoundaryVecField2()
 
 
     """Test of Extrapolation Method """
