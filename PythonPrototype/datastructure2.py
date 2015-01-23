@@ -521,6 +521,7 @@ class VTKData:
     _firstSearch = True
     _CurrentMaxStep = 1.0e-12
     _nextCell = None
+    _fileLoaded = False
 
 #---class Methods
     # Constructor method
@@ -732,6 +733,7 @@ class VTKData:
                         print('Values loading reached: ' + str(value_counter*100.0/self._numVert) + '%')
                    value_counter+=1
         if(file.closed): self.computeCellTopology()
+        self._fileLoaded = True
 
     def computeCellTopology(self):
         """ Computes a basic cell topology, based on cells which are sharing a vertex

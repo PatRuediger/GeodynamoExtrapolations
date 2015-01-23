@@ -145,10 +145,10 @@ def sphericalHarmoAnalysis(x):
     """Using implicit Legendre"""
     for l in range(1,degree+1):
         for m in range(l+1):
-            result._x+= ((ar/v._z)**(l +2))*dLp[l][m]*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
-            result._y+= (ar/(v._z))**(l +2)* ((Lp[l][m]*m)/math.sin(v._x)) * (g[l][m]*math.sin(m*v._y)-h[l][m]*math.cos(m*v._y))
-            result._z+= -(l +1)*((ar/v._z)**(l +2))*Lp[l][m]*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
-            
+            result._x+= ((ar/v._z)**(l +2))*dLp[m][l]*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
+            result._y+= (ar/(v._z))**(l +2)* ((Lp[m][l]*m)/math.sin(v._x)) * (g[l][m]*math.sin(m*v._y)-h[l][m]*math.cos(m*v._y))
+            result._z+= -(l +1)*((ar/v._z)**(l +2))*Lp[m][l]*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
+            #print("SHA results",l,m,result)
     """    for l in range(1,n+1):
         for m in range(l+1):
             result._x+=((a/v._z)**(l+1))*deltaSN(m,l,math.cos(v._x))*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
@@ -158,7 +158,8 @@ def sphericalHarmoAnalysis(x):
             #print(l,m,result)"""
 
     #print("sha,spherical:",result)
-    vf = toCartesianVecfield(v,result)
+    #vf = result
+    vf = toCartesian(result)
     #vf = toCartesian(result)
 #    print("sha,cartesian:",vf)
     return vf

@@ -366,7 +366,7 @@ def Draw ():
     glColor4f(0.1,0.8,1.0,1.0);
     drawVectorfield(g_vecFieldPos2,g_vecFieldValue2,3.0)
     glColor4f(1.0,0.1,0.1,1.0)
-    drawStreamLines()
+    #drawStreamLines()
     #glEnable(GL_CULL_FACE)
     #drawWireFrame()
     #streamLine(g_streamLinePos,g_streamLineValue)

@@ -9,6 +9,7 @@ import sphericalharmo as sph
 import datastructure2 as ds
 import cProfile
 import re
+from tabulate import tabulate
 
 
 
@@ -273,18 +274,22 @@ def testBoundaryVecField():
     Vis.setVectorfield2(xf_oc,vf_oc) # light blue
     return    
 
-def testBoundaryVecField2():
+def testBoundaryVecField2(data):
     loadGaussCoefSimu("../../Gauss_RE.dat","../../Gauss_ICB.dat")
-    data = ds.VTKData()
-    data.loadFile('C:/out.1200.vtk')
-    data.builtKDTree()
+    #data = ds.VTKData()
+    #if (not data._fileLoaded):
+       # data.loadFile('C:/out.1200.vtk')
+      #  data.builtKDTree()
     sph.setData(data)
     vf_mantle = []
     vf_oc = []
     xf_mantle=[]
     xf_oc = []
-    for theta in range(10,2*3141,800):
-        for phi in range(10,3141,400):
+    langles=[]
+    theta = 1500
+    #for theta in range(10,2*3141,500):
+    for phi in range(10,3141,250):
+            #phi =1500
             ##choose verteces out of the data set -> avoid interpolation
             tpr_oc = ds.Point3D(theta/1000.0, phi/1000.0, 1.537983852128 - 1.0e-4)
             xyz_oc = toCartesian(tpr_oc)
@@ -307,14 +312,18 @@ def testBoundaryVecField2():
             dp = datastructure2.dot(vf_xyz_oc,vf_xyz_mantle)
             
             angle = math.acos( dp /(a*b) )
-           # print("OC:",vf_xyz_oc,"Mantle: ",vf_xyz_mantle)
-            print(tpr_oc,"Angle:", angle)
+            langles.append(angle)
+            #print("OC:",vf_xyz_oc,"Mantle: ",vf_xyz_mantle)
+            #print(tpr_oc,"Angle:", angle)
+            #print(" ------------------End of Block -------------------- ")
             """ --- """
             
-    print("finished computation")        
-    Vis.setVectorfield(xf_mantle,vf_mantle)
-    Vis.setVectorfield2(xf_oc,vf_oc)
-    return    
+    #print("finished computation")       
+   #print("max angle:",max(langles),"min angle:",min(langles))
+    outputAngle=[max(langles)]
+    Vis.setVectorfield(xf_oc,vf_oc)#purple
+    Vis.setVectorfield2(xf_mantle,vf_mantle)#light blue
+    return outputAngle    
 
 def DS_compared_Vecfield():
     loadGaussCoefSimu("../../Gauss_RE.dat","../../Gauss_ICB.dat")
@@ -425,10 +434,10 @@ def perfectDipol(x,dt):
         
 
 def main():
-    #data= ds.VTKData()
-    #data = loadData('C:/out.1200.vtk')
+    data= ds.VTKData()
+    data = loadData('C:/out.1200.vtk')
     #Vis.built_cm_rainbow(data)
-    #data.builtKDTree()
+    data.builtKDTree()
     """Test of Dataset Streamline Vis""" 
     #for phi in range(200,2*3141,600):
      #   test_OC_only(1.4,phi/1000.0,0.7,"forward",data)
@@ -437,10 +446,15 @@ def main():
     #test_OC_only(1.0,0.6,1.0,"forward",data)
 
     """Test of CMB behaviour, critical regions"""
-    sph.setDegree(45)
-    cProfile.run('testBoundaryVecField2()')    
-    #testBoundaryVecField2()
-
+    #sph.setDegree(6)
+    #cProfile.run('testBoundaryVecField2()') 
+    angleTable= []
+    print("degree", "max" , "min")
+    for deg in range(5,95):
+        sph.setDegree(deg)
+        angleTable.append(testBoundaryVecField2(data))
+    
+    print tabulate(angleTable)
 
     """Test of Extrapolation Method """
     #for phi in range(10,2*3141,500):
