@@ -7,7 +7,8 @@ Created on Sat Sep 06 11:22:36 2014
 from sphericalharmo import *
 import sphericalharmo as sph
 import datastructure2 as ds
-
+import cProfile
+import re
 
 
 
@@ -282,21 +283,34 @@ def testBoundaryVecField2():
     vf_oc = []
     xf_mantle=[]
     xf_oc = []
-    for theta in range(10,2*3141,315):
-        for phi in range(10,3141,158):
+    for theta in range(10,2*3141,800):
+        for phi in range(10,3141,400):
             ##choose verteces out of the data set -> avoid interpolation
             tpr_oc = ds.Point3D(theta/1000.0, phi/1000.0, 1.537983852128 - 1.0e-4)
             xyz_oc = toCartesian(tpr_oc)
             xyz_tripple = (xyz_oc._x,xyz_oc._y,xyz_oc._z)
             di,oc_index = data._kdTree.query(xyz_tripple)
             xyz_oc = data._vertexList[oc_index]._pos
+            vf_xyz_oc = data._vertexList[oc_index]._mag
             vf_oc.append(data._vertexList[oc_index]._mag)
             xf_oc.append(xyz_oc)
             
             tpr_m= toSpherical(xyz_oc).add(Point3D(0.0,0.0,1.0e-4))
             xyz_m = toCartesian(tpr_m)
             xf_mantle.append(xyz_m)
-            vf_mantle.append(sphericalHarmoAnalysis(xyz_m))
+            vf_xyz_mantle = sphericalHarmoAnalysis(xyz_m)
+            vf_mantle.append(vf_xyz_mantle)
+            
+            """debugging"""
+            a= vf_xyz_oc._length()
+            b= vf_xyz_mantle._length()
+            dp = datastructure2.dot(vf_xyz_oc,vf_xyz_mantle)
+            
+            angle = math.acos( dp /(a*b) )
+           # print("OC:",vf_xyz_oc,"Mantle: ",vf_xyz_mantle)
+            print(tpr_oc,"Angle:", angle)
+            """ --- """
+            
     print("finished computation")        
     Vis.setVectorfield(xf_mantle,vf_mantle)
     Vis.setVectorfield2(xf_oc,vf_oc)
@@ -423,8 +437,9 @@ def main():
     #test_OC_only(1.0,0.6,1.0,"forward",data)
 
     """Test of CMB behaviour, critical regions"""
-    sph.setDegree(95)    
-    testBoundaryVecField2()
+    sph.setDegree(45)
+    cProfile.run('testBoundaryVecField2()')    
+    #testBoundaryVecField2()
 
 
     """Test of Extrapolation Method """

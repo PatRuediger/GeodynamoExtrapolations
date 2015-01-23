@@ -146,9 +146,9 @@ def sphericalHarmoAnalysis(x):
     for l in range(1,degree+1):
         for m in range(l+1):
             result._x+= ((ar/v._z)**(l +2))*dLp[l][m]*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
-            result._y+= -(ar/(v._z))**(l +2)* ((Lp[l][m]*m)/math.sin(v._x)) * (g[l][m]*m*math.sin(m*v._y)-h[l][m]*m*math.cos(m*v._y))
-            result._z+= (l +1)*((ar/v._z)**(l +2))*Lp[l][m]*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
-
+            result._y+= (ar/(v._z))**(l +2)* ((Lp[l][m]*m)/math.sin(v._x)) * (g[l][m]*math.sin(m*v._y)-h[l][m]*math.cos(m*v._y))
+            result._z+= -(l +1)*((ar/v._z)**(l +2))*Lp[l][m]*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
+            
     """    for l in range(1,n+1):
         for m in range(l+1):
             result._x+=((a/v._z)**(l+1))*deltaSN(m,l,math.cos(v._x))*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
@@ -156,8 +156,10 @@ def sphericalHarmoAnalysis(x):
             result._y+=((a/v._z)**(l+1))*SN(m,l,cos(v._x))*(-g[l][m]*m*math.sin(m*v._y)+h[l][m]*m*math.cos(m*v._y))
             result._z+=(l+1)*((a/v._z)**(l+2))*SN(m,l,cos(v._x))*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
             #print(l,m,result)"""
-#    print("sha,spherical:",result)
+
+    #print("sha,spherical:",result)
     vf = toCartesianVecfield(v,result)
+    #vf = toCartesian(result)
 #    print("sha,cartesian:",vf)
     return vf
 
@@ -361,6 +363,9 @@ def toCartesianVecfield(x,v):
     vf._x = v._z*math.sin(x._x)*math.cos(x._y) + v._x*math.cos(x._x)*math.cos(x._y)- v._y*math.sin(x._y)
     vf._y = v._z*math.sin(x._x)*math.sin(x._y) + v._x*math.cos(x._x)*math.sin(x._y)+ v._y*math.cos(x._y)
     vf._z = v._z*math.cos(x._x) - v._x*math.sin(x._x)
+    #vf._x =  v._y*math.sin(x._y)
+    #vf._y =  v._x*math.cos(x._x)*math.sin(x._y)
+    #vf._z =  v._z*math.cos(x._x) 
     return vf
 
 
