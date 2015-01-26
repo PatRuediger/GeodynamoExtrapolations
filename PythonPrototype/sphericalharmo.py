@@ -120,19 +120,16 @@ def sphericalHarmoAnalysis(x):
     @Input: Point3D Position
     @Output: Point3D Magnetic Field
     """
-    ##Coord Transformation
-    #print("Pos Cartesian: "+ str(x._x)+","+str(x._y)+","+str(x._z))
-    #print(x)
+
     v = toSpherical(x)
-    #print(v)
-    #print("Pos Spherical: "+ str(v._x)+","+str(v._y)+","+str(v._z))
+    #v._x = v._x -math.pi/2.0    
     result=Point3D(0,0,0)
 
     """Get Gaus Coef respective to radius""" 
     degree=g_degree
     g,h = getGaussCoef(v._z)
 
-    Lp = SN_Legendre(math.cos(v._x),degree)
+    Lp = SN_Legendre(v._x,degree)
     dLp = deltaSN_Legendre(Lp,degree)
     """for l in range(1,n):
         for m in range(l+1):
@@ -142,12 +139,17 @@ def sphericalHarmoAnalysis(x):
             result._y+= -(ar/(v._z))**(l +2)*SN(m,l,cos(v._x))*(-g[l][m]*m*math.sin(m*v._y)+h[l][m]*m*math.cos(m*v._y))
             result._z+= (l +1)*((ar/v._z)**(l +2))*SN(m,l,cos(v._x))*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
     """
+
+    print(cos(v._x))
     """Using implicit Legendre"""
     for l in range(1,degree+1):
         for m in range(l+1):
+            #if (math.isnan(dLp[m][l])):
+                #print(l,m, "theta delta Legendre is nan")
+               # dLp[m][l]=math.pi
             result._x+= ((ar/v._z)**(l +2))*dLp[m][l]*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
-            result._y+= (ar/(v._z))**(l +2)* ((Lp[m][l]*m)/math.sin(v._x)) * (g[l][m]*math.sin(m*v._y)-h[l][m]*math.cos(m*v._y))
-            result._z+= -(l +1)*((ar/v._z)**(l +2))*Lp[m][l]*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
+            result._y+= -(ar/(v._z))**(l +2)* ((Lp[m][l]*m)/math.sin(v._x)) * (g[l][m]*math.sin(m*v._y)-h[l][m]*math.cos(m*v._y))
+            result._z+= (l +1)*((ar/v._z)**(l +2))*Lp[m][l]*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
             #print("SHA results",l,m,result)
     """    for l in range(1,n+1):
         for m in range(l+1):
@@ -156,12 +158,12 @@ def sphericalHarmoAnalysis(x):
             result._y+=((a/v._z)**(l+1))*SN(m,l,cos(v._x))*(-g[l][m]*m*math.sin(m*v._y)+h[l][m]*m*math.cos(m*v._y))
             result._z+=(l+1)*((a/v._z)**(l+2))*SN(m,l,cos(v._x))*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
             #print(l,m,result)"""
-
+   # result._x=result._x + math.pi/2.0
+    print(v._x,"theta Comp",result._x )
     #print("sha,spherical:",result)
-    #vf = result
-    vf = toCartesian(result)
+    vf = result
     #vf = toCartesian(result)
-#    print("sha,cartesian:",vf)
+
     return vf
 
 #Schmidt-Normalized Legendrefunction
@@ -193,14 +195,14 @@ def SN_Legendre(x,degree):
     p_sn[0][0] = 1.0
     p_sn[0][1] = cos(x)
     for l in range(2,degree+1):
-        p_sn[0][l]=p_sn[0][l-1] * float(2*l -1)/float(l) * cos(x)- p_sn[0][l-2] * float(l-1)/float(l)        
+        p_sn[0][l]=p_sn[0][l-1] * float(2*l -1)/float(l) * math.cos(x)- p_sn[0][l-2] * float(l-1)/float(l)        
     """Normalization"""
-    df=[1.0 for xl in range(degree+1+1)]    
+    df=[1.0 for xl in range(degree+2+1)]    
     for m in range(1,degree+1):   
         #df.insert(m,1.0)
         for k in range(1,m+1):
             df[m]=df[m] * float(2*k-1) / float(2*k)
-        df[m+1] = sqrt( 2.0 * df[m] * float(2*m +1) ) * cos(x)
+        df[m+1] = sqrt( 2.0 * df[m] * float(2*m +1) ) * math.cos(x)
         df[m] = sqrt(2.0*df[m])
         
         if( m < degree-1):

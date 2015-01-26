@@ -106,25 +106,25 @@ def cross(a,b):
     c._y = a._z*b._x - a._x*b._z
     c._z = a._x*b._y - a._y*b._x
     return c
-
+"""
 def toCartesian(x):
     v=Point3D(0,0,0)
     v._x = x._z*math.sin(x._x)*math.cos(x._y)
     v._y = x._z*math.sin(x._x)*math.sin(x._y)
     v._z = x._z*math.cos(x._x)
     return v
-
+"""
 #Coordinate transformation Cartesian  to Spherical
-def toSpherical(x):
+"""def toSpherical(x):
     v=Point3D(0,0,0)
     #theta
     v._x = math.acos(x._z/x._length())
     #phi
-    v._y = math.atan2(x._y,x._x)
+    v._y = math.atan2(x._y,x._x) + math.pi
     #r
     v._z = x._length()
     return v
-
+"""
 class Point3D:
 #    _x = 0.0
 #    _y = 0.0
@@ -732,7 +732,7 @@ class VTKData:
                    if ((value_counter*100.0/self._numVert) % 10)==0:
                         print('Values loading reached: ' + str(value_counter*100.0/self._numVert) + '%')
                    value_counter+=1
-        if(file.closed): self.computeCellTopology()
+        #if(file.closed): self.computeCellTopology()
         self._fileLoaded = True
 
     def computeCellTopology(self):

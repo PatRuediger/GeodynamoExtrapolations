@@ -286,9 +286,9 @@ def testBoundaryVecField2(data):
     xf_mantle=[]
     xf_oc = []
     langles=[]
-    theta = 1500
-    #for theta in range(10,2*3141,500):
-    for phi in range(10,3141,250):
+    #theta = 1500
+    for theta in range(10,3141,500):
+        for phi in range(10,2*3141,250):
             #phi =1500
             ##choose verteces out of the data set -> avoid interpolation
             tpr_oc = ds.Point3D(theta/1000.0, phi/1000.0, 1.537983852128 - 1.0e-4)
@@ -446,15 +446,16 @@ def main():
     #test_OC_only(1.0,0.6,1.0,"forward",data)
 
     """Test of CMB behaviour, critical regions"""
-    #sph.setDegree(6)
+    sph.setDegree(10)
     #cProfile.run('testBoundaryVecField2()') 
-    angleTable= []
-    print("degree", "max" , "min")
-    for deg in range(5,95):
-        sph.setDegree(deg)
-        angleTable.append(testBoundaryVecField2(data))
+    testBoundaryVecField2(data)
+    #angleTable= []
+    #print("degree", "max" , "min")
+    #for deg in range(5,95):
+     #   sph.setDegree(deg)
+      #  angleTable.append(testBoundaryVecField2(data))
     
-    print tabulate(angleTable)
+    #print tabulate(angleTable,[deg for deg in range(5,95)])
 
     """Test of Extrapolation Method """
     #for phi in range(10,2*3141,500):

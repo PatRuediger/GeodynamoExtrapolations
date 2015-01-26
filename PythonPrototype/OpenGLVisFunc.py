@@ -362,10 +362,10 @@ def Draw ():
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable( GL_BLEND );
     glColor4f(0.8,0.1,1.0,1.0);
-    drawVectorfield(g_vecFieldPos,g_vecFieldValue,3.0)
+    drawVectorfield(g_vecFieldPos,g_vecFieldValue,0.5)
     glColor4f(0.1,0.8,1.0,1.0);
-    drawVectorfield(g_vecFieldPos2,g_vecFieldValue2,3.0)
-    glColor4f(1.0,0.1,0.1,1.0)
+    drawVectorfield(g_vecFieldPos2,g_vecFieldValue2,0.5)
+    #glColor4f(1.0,0.1,0.1,1.0)
     #drawStreamLines()
     #glEnable(GL_CULL_FACE)
     #drawWireFrame()
