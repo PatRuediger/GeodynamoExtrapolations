@@ -276,6 +276,14 @@ def testBoundaryVecField():
 
 def testBoundaryVecField2(data):
     loadGaussCoefSimu("../../Gauss_RE.dat","../../Gauss_ICB.dat")
+    g,h = sph.getGaussCoef(1.6)
+    gl =  []
+    hl = []
+    for l in range(94):
+        gl.append(max(g[l]))
+        hl.append(max(h[l]))
+    print ("max g", max(gl))        
+    print ("max h", max(hl))
     #data = ds.VTKData()
     #if (not data._fileLoaded):
        # data.loadFile('C:/out.1200.vtk')
@@ -446,7 +454,7 @@ def main():
     #test_OC_only(1.0,0.6,1.0,"forward",data)
 
     """Test of CMB behaviour, critical regions"""
-    sph.setDegree(10)
+    sph.setDegree(20)
     #cProfile.run('testBoundaryVecField2()') 
     testBoundaryVecField2(data)
     #angleTable= []

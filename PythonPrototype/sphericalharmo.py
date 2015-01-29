@@ -122,7 +122,7 @@ def sphericalHarmoAnalysis(x):
     """
 
     v = toSpherical(x)
-    #v._x = v._x -math.pi/2.0    
+    v._x = v._x -math.pi/2.0    
     result=Point3D(0,0,0)
 
     """Get Gaus Coef respective to radius""" 
@@ -139,7 +139,6 @@ def sphericalHarmoAnalysis(x):
             result._y+= -(ar/(v._z))**(l +2)*SN(m,l,cos(v._x))*(-g[l][m]*m*math.sin(m*v._y)+h[l][m]*m*math.cos(m*v._y))
             result._z+= (l +1)*((ar/v._z)**(l +2))*SN(m,l,cos(v._x))*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
     """
-
     print(cos(v._x))
     """Using implicit Legendre"""
     for l in range(1,degree+1):
@@ -159,10 +158,10 @@ def sphericalHarmoAnalysis(x):
             result._z+=(l+1)*((a/v._z)**(l+2))*SN(m,l,cos(v._x))*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
             #print(l,m,result)"""
    # result._x=result._x + math.pi/2.0
-    print(v._x,"theta Comp",result._x )
+    print(v._x,"theta,phi,r",result )
     #print("sha,spherical:",result)
-    vf = result
-    #vf = toCartesian(result)
+    #vf = result
+    vf = toCartesian(result)
 
     return vf
 
