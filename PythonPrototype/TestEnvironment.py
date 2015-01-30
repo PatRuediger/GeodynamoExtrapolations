@@ -274,6 +274,52 @@ def testBoundaryVecField():
     Vis.setVectorfield2(xf_oc,vf_oc) # light blue
     return    
 
+def testSHA_old_new():
+    loadGaussCoefSimu("../../Gauss_RE.dat","../../Gauss_ICB.dat")
+    vf_mantle = []
+    vf_oc = []
+    xf_mantle=[]
+    xf_oc = []
+    langles=[]
+    #theta = 1500
+    print("degree: 20","theta [0,pi],phi[0,2pi],r = cmb+1.0e-4")
+    print("pos","SHA result")
+    for theta in range(10,3141,500):
+        for phi in range(10,2*3141,250):
+            #phi =1500
+            ##choose verteces out of the data set -> avoid interpolation
+            tpr_oc = ds.Point3D(theta/1000.0, phi/1000.0, 1.537983852128 + 1.0e-4)
+            xyz_oc = toCartesian(tpr_oc)
+            vf_xyz_oc = sphericalHarmoAnalysisOld(xyz_oc)
+            vf_oc.append(vf_xyz_oc)
+            xf_oc.append(xyz_oc)
+            
+            tpr_m= tpr_oc
+            #tpr_m= toSpherical(xyz_oc).add(Point3D(0.0,0.0,0.5))
+            xyz_m = toCartesian(tpr_m)
+            xf_mantle.append(xyz_m)
+            vf_xyz_mantle = sphericalHarmoAnalysis(xyz_m)
+            vf_mantle.append(vf_xyz_mantle)
+            
+            """debugging"""
+            a= vf_xyz_oc._length()
+            b= vf_xyz_mantle._length()
+            dp = datastructure2.dot(vf_xyz_oc,vf_xyz_mantle)
+            
+            angle = math.acos( dp /(a*b) )
+            langles.append(angle)
+            #print("Old:",vf_xyz_oc,"new: ",vf_xyz_mantle)
+            print(tpr_oc,"Angle diff:", angle)
+            #print(" ------------------End of Block -------------------- ")
+            """ --- """
+            
+    #print("finished computation")       
+   #print("max angle:",max(langles),"min angle:",min(langles))
+    outputAngle=[max(langles)]
+    Vis.setVectorfield(xf_oc,vf_oc)#purple
+    Vis.setVectorfield2(xf_mantle,vf_mantle)#light blue
+    return outputAngle    
+
 def testBoundaryVecField2(data):
     loadGaussCoefSimu("../../Gauss_RE.dat","../../Gauss_ICB.dat")
     g,h = sph.getGaussCoef(1.6)
@@ -295,6 +341,8 @@ def testBoundaryVecField2(data):
     xf_oc = []
     langles=[]
     #theta = 1500
+    print("degree: 20","theta [0,pi],phi[0,2pi],r = cmb+1.0e-4")
+    print("pos","SHA result")
     for theta in range(10,3141,500):
         for phi in range(10,2*3141,250):
             #phi =1500
@@ -308,7 +356,8 @@ def testBoundaryVecField2(data):
             vf_oc.append(data._vertexList[oc_index]._mag)
             xf_oc.append(xyz_oc)
             
-            tpr_m= toSpherical(xyz_oc).add(Point3D(0.0,0.0,1.0e-4))
+            tpr_m= toSpherical(xyz_oc).add(Point3D(0.0,0.0,1.0e-2))
+            #tpr_m= toSpherical(xyz_oc).add(Point3D(0.0,0.0,0.5))
             xyz_m = toCartesian(tpr_m)
             xf_mantle.append(xyz_m)
             vf_xyz_mantle = sphericalHarmoAnalysis(xyz_m)
@@ -454,7 +503,7 @@ def main():
     #test_OC_only(1.0,0.6,1.0,"forward",data)
 
     """Test of CMB behaviour, critical regions"""
-    sph.setDegree(20)
+    sph.setDegree(4)
     #cProfile.run('testBoundaryVecField2()') 
     testBoundaryVecField2(data)
     #angleTable= []

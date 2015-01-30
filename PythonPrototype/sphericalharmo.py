@@ -122,14 +122,17 @@ def sphericalHarmoAnalysis(x):
     """
 
     v = toSpherical(x)
-    v._x = v._x -math.pi/2.0    
+    #v._x = v._x +math.pi/2.0   
     result=Point3D(0,0,0)
-
+    #temp1 = v._x
+    #temp2 = v._y
+    #v._y = temp1
+    #v._x = temp2
     """Get Gaus Coef respective to radius""" 
     degree=g_degree
     g,h = getGaussCoef(v._z)
 
-    Lp = SN_Legendre(v._x,degree)
+    Lp = SN_Legendre(sin(v._x),degree)
     dLp = deltaSN_Legendre(Lp,degree)
     """for l in range(1,n):
         for m in range(l+1):
@@ -139,17 +142,22 @@ def sphericalHarmoAnalysis(x):
             result._y+= -(ar/(v._z))**(l +2)*SN(m,l,cos(v._x))*(-g[l][m]*m*math.sin(m*v._y)+h[l][m]*m*math.cos(m*v._y))
             result._z+= (l +1)*((ar/v._z)**(l +2))*SN(m,l,cos(v._x))*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
     """
-    print(cos(v._x))
+   # print(cos(v._x))
     """Using implicit Legendre"""
     for l in range(1,degree+1):
         for m in range(l+1):
             #if (math.isnan(dLp[m][l])):
                 #print(l,m, "theta delta Legendre is nan")
                # dLp[m][l]=math.pi
-            result._x+= ((ar/v._z)**(l +2))*dLp[m][l]*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
-            result._y+= -(ar/(v._z))**(l +2)* ((Lp[m][l]*m)/math.sin(v._x)) * (g[l][m]*math.sin(m*v._y)-h[l][m]*math.cos(m*v._y))
-            result._z+= (l +1)*((ar/v._z)**(l +2))*Lp[m][l]*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
+            result._y+= ((ar/v._z)**(l +2))*dLp[m][l]*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
+            result._x+= (ar/(v._z))**(l +2)* ((Lp[m][l]*m)/math.sin(v._x)) * (g[l][m]*math.sin(m*v._y)-h[l][m]*math.cos(m*v._y))
+            result._z+= -(l +1)*((ar/v._z)**(l +2))*Lp[m][l]*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
             #print("SHA results",l,m,result)
+            """
+            result._x+= -ar*((ar/v._z)**(l +1))*dLp[m][l]*(-sin(v._x))*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
+            result._y+= -ar*(ar/(v._z))**(l +1)* Lp[m][l]*m * (-g[l][m]*math.sin(m*v._y)+h[l][m]*math.cos(m*v._y))
+            result._z+= ar*(l +1)*((ar/v._z)**(l +2))*Lp[m][l]*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
+            """
     """    for l in range(1,n+1):
         for m in range(l+1):
             result._x+=((a/v._z)**(l+1))*deltaSN(m,l,math.cos(v._x))*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
@@ -158,12 +166,42 @@ def sphericalHarmoAnalysis(x):
             result._z+=(l+1)*((a/v._z)**(l+2))*SN(m,l,cos(v._x))*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
             #print(l,m,result)"""
    # result._x=result._x + math.pi/2.0
-    print(v._x,"theta,phi,r",result )
+    print("new",v,toSpherical(result) )
     #print("sha,spherical:",result)
-    #vf = result
-    vf = toCartesian(result)
+    vf = result
+    #vf = toCartesian(result)
 
     return vf
+
+def sphericalHarmoAnalysisOld(x):
+    """Evaluates the spherical harmonics equation for the magnetic field, with degree n
+    @Input: Point3D Position
+    @Output: Point3D Magnetic Field
+    """
+
+    v = toSpherical(x)
+    result=Point3D(0,0,0)
+    #v._x = v._x +math.pi/2.0  
+   # temp1 = v._x
+   # temp2 = v._y
+   # v._y = temp1
+  #  v._x = temp2
+    """Get Gaus Coef respective to radius""" 
+    g,h = getGaussCoef(v._z)
+    for l in range(1,5):
+        for m in range(l+1):
+            result._y+= ((ar/v._z)**(l +2))*deltaSN(m,l,math.cos(v._x))*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
+            result._x+= (ar/(v._z))**(l +2)* (SN(m,l,cos(v._x))/math.sin(v._x)) * (g[l][m]*math.sin(m*v._y)-h[l][m]*math.cos(m*v._y))
+            result._z+= -(l +1)*((ar/v._z)**(l +2))*SN(m,l,cos(v._x))*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
+    
+
+    print("old",v,toSpherical(result) )
+    #print("sha,spherical:",result)
+    vf = result
+    #vf = toCartesian(result)
+
+    return vf
+
 
 #Schmidt-Normalized Legendrefunction
 def SN(m,l,x):
@@ -190,28 +228,29 @@ def SN_Legendre(x,degree):
     """Schmid Normalized Legendrefunction
        returns a 2D Array with evaluated Legendre functions at position x
        use as L(m,l,x) = p_sn[m,l]""" 
+    sinx= sin(x)   
     p_sn=[[0.0 for xl in range(degree+1)]*(degree+1) for xl in range(degree+1)]
     p_sn[0][0] = 1.0
-    p_sn[0][1] = cos(x)
+    p_sn[0][1] = x
     for l in range(2,degree+1):
-        p_sn[0][l]=p_sn[0][l-1] * float(2*l -1)/float(l) * math.cos(x)- p_sn[0][l-2] * float(l-1)/float(l)        
+        p_sn[0][l]=p_sn[0][l-1] * float(2*l -1)/float(l) * x - p_sn[0][l-2] * float(l-1)/float(l)        
     """Normalization"""
     df=[1.0 for xl in range(degree+2+1)]    
     for m in range(1,degree+1):   
         #df.insert(m,1.0)
         for k in range(1,m+1):
             df[m]=df[m] * float(2*k-1) / float(2*k)
-        df[m+1] = sqrt( 2.0 * df[m] * float(2*m +1) ) * math.cos(x)
+        df[m+1] = sqrt( 2.0 * df[m] * float(2*m +1) ) * x
         df[m] = sqrt(2.0*df[m])
         
         if( m < degree-1):
             for l in range(m+2,degree+1):
-                df[l]=( cos(x) * float(2*l -1) * df[l-1] - sqrt( float( (l-1)*(l-1) - m*m )) * df[l-2] ) / sqrt( float( l*l - m*m ))        
+                df[l]=( x * float(2*l -1) * df[l-1] - sqrt( float( (l-1)*(l-1) - m*m )) * df[l-2] ) / sqrt( float( l*l - m*m ))        
                 
         for l in range(m,degree+1):
             p_sn[m][l]=df[l]
             for m1 in range(1,m+1):
-                p_sn[m][l] = p_sn[m][l]*sin(x)
+                p_sn[m][l] = p_sn[m][l]*sinx
     return p_sn
 
 def deltaSN_Legendre(p_sn,degree):
@@ -343,7 +382,7 @@ def toSpherical(x):
     #theta
     v._x = math.acos(x._z/x._length())
     #phi
-    v._y = math.atan2(x._y,x._x)
+    v._y = math.atan2(x._y,x._x) 
     #r
     v._z = x._length()
     return v
