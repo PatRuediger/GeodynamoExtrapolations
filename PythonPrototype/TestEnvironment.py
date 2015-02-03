@@ -353,6 +353,7 @@ def testBoundaryVecField2(data):
             di,oc_index = data._kdTree.query(xyz_tripple)
             xyz_oc = data._vertexList[oc_index]._pos
             vf_xyz_oc = data._vertexList[oc_index]._mag
+            print("data",toSphericalVecfield(tpr_oc,vf_xyz_oc))
             vf_oc.append(data._vertexList[oc_index]._mag)
             xf_oc.append(xyz_oc)
             
