@@ -122,7 +122,7 @@ def sphericalHarmoAnalysis(x):
     """
 
     v = toSpherical(x)
-    #v._x = v._x +math.pi/2.0   
+    v._x = v._x -math.pi/2.0   
     result=Point3D(0,0,0)
     #temp1 = v._x
     #temp2 = v._y
@@ -132,7 +132,8 @@ def sphericalHarmoAnalysis(x):
     degree=g_degree
     g,h = getGaussCoef(v._z)
 
-    Lp = SN_Legendre(sin(v._x),degree)
+    Lp = SN_Legendre(v._x,degree)
+    #Lp_sin = SN_Legendre(v._x-pi/2.0,degree)
     dLp = deltaSN_Legendre(Lp,degree)
     """for l in range(1,n):
         for m in range(l+1):
@@ -146,17 +147,15 @@ def sphericalHarmoAnalysis(x):
     """Using implicit Legendre"""
     for l in range(1,degree+1):
         for m in range(l+1):
-            #if (math.isnan(dLp[m][l])):
-                #print(l,m, "theta delta Legendre is nan")
-               # dLp[m][l]=math.pi
-            result._y+= ((ar/v._z)**(l +2))*dLp[m][l]*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
-            result._x+= (ar/(v._z))**(l +2)* ((Lp[m][l]*m)/math.sin(v._x)) * (g[l][m]*math.sin(m*v._y)-h[l][m]*math.cos(m*v._y))
-            result._z+= -(l +1)*((ar/v._z)**(l +2))*Lp[m][l]*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
+            
+            result._x+= ((ar/v._z)**(l +2))*dLp[m][l]*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
+            result._y+= (ar/(v._z))**(l +2)* ((Lp[m][l]*m)/math.sin(v._x)) * (g[l][m]*math.sin(m*v._y)-h[l][m]*math.cos(m*v._y))
+            result._z+= (l +1)*((ar/v._z)**(l +2))*Lp[m][l]*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
             #print("SHA results",l,m,result)
             """
-            result._x+= -ar*((ar/v._z)**(l +1))*dLp[m][l]*(-sin(v._x))*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
-            result._y+= -ar*(ar/(v._z))**(l +1)* Lp[m][l]*m * (-g[l][m]*math.sin(m*v._y)+h[l][m]*math.cos(m*v._y))
-            result._z+= ar*(l +1)*((ar/v._z)**(l +2))*Lp[m][l]*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
+            result._x+= ar*((ar/v._z)**(l +1))*dLp[m][l]*(-sin(v._x))*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
+            result._y+= ar*(ar/(v._z))**(l +1)* Lp[m][l]*m * (-g[l][m]*math.sin(m*v._y)+h[l][m]*math.cos(m*v._y))
+            result._z+= ar*((-(l +1)*ar*(ar/v._z)**(l))/(v._z**2))*Lp[m][l]*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
             """
     """    for l in range(1,n+1):
         for m in range(l+1):
@@ -165,11 +164,12 @@ def sphericalHarmoAnalysis(x):
             result._y+=((a/v._z)**(l+1))*SN(m,l,cos(v._x))*(-g[l][m]*m*math.sin(m*v._y)+h[l][m]*m*math.cos(m*v._y))
             result._z+=(l+1)*((a/v._z)**(l+2))*SN(m,l,cos(v._x))*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
             #print(l,m,result)"""
-   # result._x=result._x + math.pi/2.0
+    #result._x = cos(result._x)
+    result._z= result._z*(-1.0 ) 
     print("new",v,toSpherical(result) )
     #print("sha,spherical:",result)
-    vf = result
-    #vf = toCartesian(result)
+    #vf = result
+    vf = toCartesianVecfield(v,result)
 
     return vf
 
@@ -231,26 +231,27 @@ def SN_Legendre(x,degree):
     sinx= sin(x)   
     p_sn=[[0.0 for xl in range(degree+1)]*(degree+1) for xl in range(degree+1)]
     p_sn[0][0] = 1.0
-    p_sn[0][1] = x
+    p_sn[0][1] = cos(x)
     for l in range(2,degree+1):
-        p_sn[0][l]=p_sn[0][l-1] * float(2*l -1)/float(l) * x - p_sn[0][l-2] * float(l-1)/float(l)        
+        p_sn[0][l]=p_sn[0][l-1] * float(2*l -1)/float(l) * cos(x) - p_sn[0][l-2] * float(l-1)/float(l)        
     """Normalization"""
     df=[1.0 for xl in range(degree+2+1)]    
     for m in range(1,degree+1):   
         #df.insert(m,1.0)
         for k in range(1,m+1):
             df[m]=df[m] * float(2*k-1) / float(2*k)
-        df[m+1] = sqrt( 2.0 * df[m] * float(2*m +1) ) * x
+        """ cos(X) is critical here """
+        df[m+1] = sqrt( 2.0 * df[m] * float(2*m +1) ) * cos(x)
         df[m] = sqrt(2.0*df[m])
         
         if( m < degree-1):
             for l in range(m+2,degree+1):
-                df[l]=( x * float(2*l -1) * df[l-1] - sqrt( float( (l-1)*(l-1) - m*m )) * df[l-2] ) / sqrt( float( l*l - m*m ))        
+                df[l]=( cos(x) * float(2*l -1) * df[l-1] - sqrt( float( (l-1)*(l-1) - m*m )) * df[l-2] ) / sqrt( float( l*l - m*m ))        
                 
         for l in range(m,degree+1):
             p_sn[m][l]=df[l]
             for m1 in range(1,m+1):
-                p_sn[m][l] = p_sn[m][l]*sinx
+                p_sn[m][l] = p_sn[m][l]*sin(x)
     return p_sn
 
 def deltaSN_Legendre(p_sn,degree):
@@ -401,9 +402,9 @@ def toCartesianVecfield(x,v):
     """ Pos x has to be in spherical coordinates
     """
     vf=Point3D(0,0,0)
-    vf._x = v._z*math.sin(x._x)*math.cos(x._y) + v._x*math.cos(x._x)*math.cos(x._y)- v._y*math.sin(x._y)
-    vf._y = v._z*math.sin(x._x)*math.sin(x._y) + v._x*math.cos(x._x)*math.sin(x._y)+ v._y*math.cos(x._y)
-    vf._z = v._z*math.cos(x._x) - v._x*math.sin(x._x)
+    vf._x = v._x *(-sin(x._x))*cos(x._y) + v._y*(-sin(x._y)) + v._z * (-cos(x._x))*cos(x._y)
+    vf._y = v._x *(-sin(x._x))*sin(x._y) + v._y*cos(x._y) + v._z * (-cos(x._x))*sin(x._y)
+    vf._z = v._x *cos(x._x)  + v._z * (-sin(x._x))
     #vf._x =  v._y*math.sin(x._y)
     #vf._y =  v._x*math.cos(x._x)*math.sin(x._y)
     #vf._z =  v._z*math.cos(x._x) 
