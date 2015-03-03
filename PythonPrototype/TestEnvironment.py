@@ -504,7 +504,7 @@ def main():
     #test_OC_only(1.0,0.6,1.0,"forward",data)
 
     """Test of CMB behaviour, critical regions"""
-    sph.setDegree(20)
+    sph.setDegree(30)
     #cProfile.run('testBoundaryVecField2()') 
     testBoundaryVecField2(data)
     #angleTable= []

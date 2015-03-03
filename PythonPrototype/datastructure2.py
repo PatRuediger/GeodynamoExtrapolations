@@ -172,6 +172,9 @@ class Vertex:
 
     #Magnetic field
     _mag = Point3D(0,0,0)
+    
+    #feature Scalar Value
+    _feature = 0.0
     #Pointer to nex Vertex
     _nextVertex = None
    
@@ -637,8 +640,18 @@ class VTKData:
                 print(cell._ID,isFound,"Found outside neighbour domain")                    
                 return intPoint"""
         print("Point not found in dataset")
+    
+
+    def writeFeatureToFile(self,path):        
+        with open(path,'a') as file:
+            file.write('SCALARS feature double 1' +' \n')
+            file.write('LOOKUP_TABLE default')
+            for ver in self._vertexList:
+                file.write(str(ver._feature) + '\n')
+            
+        return
         
-        ## read in data file
+    ## read in data file
     def loadFile(self,path):
         """load a VTK File... Parser is not yet fully complete. Scalar Values in DataSet is not yet implemented"""
         with open(path,'r') as file:

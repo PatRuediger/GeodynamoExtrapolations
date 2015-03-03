@@ -131,7 +131,9 @@ def sphericalHarmoAnalysis(x):
     """Get Gaus Coef respective to radius""" 
     degree=g_degree
     g,h = getGaussCoef(v._z)
-
+    
+        
+    
     Lp = SN_Legendre(v._x,degree)
     #Lp_sin = SN_Legendre(v._x-pi/2.0,degree)
     dLp = deltaSN_Legendre(Lp,degree)
@@ -153,9 +155,9 @@ def sphericalHarmoAnalysis(x):
             result._z+= (l +1)*((ar/v._z)**(l +2))*Lp[m][l]*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
             #print("SHA results",l,m,result)
             """
-            result._x+= ar*((ar/v._z)**(l +1))*dLp[m][l]*(-sin(v._x))*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
-            result._y+= ar*(ar/(v._z))**(l +1)* Lp[m][l]*m * (-g[l][m]*math.sin(m*v._y)+h[l][m]*math.cos(m*v._y))
-            result._z+= ar*((-(l +1)*ar*(ar/v._z)**(l))/(v._z**2))*Lp[m][l]*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
+            result._x+= -((ar/v._z)**(l +2))* dLp[m][l]*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
+            result._y+= -(ar/(v._z))**(l +2)* Lp[m][l]*m / math.sin(v._x) * (-g[l][m]*math.sin(m*v._y)+h[l][m]*math.cos(m*v._y))
+            result._z+= (l +1)*(ar/v._z)**(l+2)*Lp[m][l]*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
             
     """    for l in range(1,n+1):
         for m in range(l+1):
