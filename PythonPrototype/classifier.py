@@ -7,27 +7,30 @@ Module for Feature extraction
 
 import math
 import datastructure2 as ds
+import numpy as np
+import sphericalharmo as sph
 
 def testClassifier():
     data= ds.VTKData()
     data.loadFile('C:/out.1200.vtk')
     data.builtKDTree()
     
-    classifier = Classifier(data)
+    classifier = Classifier(data,'C:/m.out.1200.vtk' )
     classifier.featureExtraction()
     
 class Classifier:
     ##Class Variables
     _dataset = None
-    _filePath = 'E:/modified.out.1200.vtk' 
+    _filePath = None
     _featureExtractor = None
     _areaExtractor = None
     
     ##Class Methods
-    def __init__(self, dataset):
+    def __init__(self, dataset, path):
         self._dataset = dataset
         self._featureExtractor = FeatureExtractor(self)
         self._areaExtractor = AreaExtractor(self)
+        self._filePath = path
         return
         
     def featureExtraction(self):
@@ -35,10 +38,15 @@ class Classifier:
         ver_counter = 0
         for ver in self._dataset._vertexList:
             ver_counter +=1
-            area = self._areaExtractor.getAreaNN(ver,6)
+            """ define area here"""
+            area = self._areaExtractor.getAreaNN(ver,10)
+            #area = self._areaExtractor.getAreaSphere(ver,0.01)
+            
+            
             featureValue = self._featureExtractor.VF_Angle_Diff(ver,area)
             ver._feature = featureValue
-            if ((ver_counter*100.0/len(self._dataset._vertexList)) % 10)==0:
+            #print(ver_counter)
+            if ((ver_counter*1000.0/len(self._dataset._vertexList)) % 10)==0:
                         print('Feature computation reached: ' + str(ver_counter*100.0/len(self._dataset._vertexList)) + '%')
         self._dataset.writeFeatureToFile(self._filePath)
         return
@@ -60,7 +68,7 @@ class FeatureExtractor:
             #print(v0._ID,ver._ID)
             #print(ds.dot(v0._mag,ver._mag))
            # print(( v0._mag._length() * ver._mag._length() ) )
-            diff =  math.acos(ds.dot(v0._mag,ver._mag) / ( v0._mag._length() * ver._mag._length() ) )
+            diff =  math.acos(ds.dot(v0._mag,ver) / ( v0._mag._length() * ver._length() ) )
             anglediff.append(diff)
         output = self.getFeatureValue(anglediff,area[0])
         return output
@@ -90,6 +98,18 @@ class AreaExtractor:
         self._classifier = classifier
         return
     
+    def getAreaSphere(self,ver,radius):
+        """ input pos: Vertex of Interest  n: Number of nearest neighbours
+            output: tupple list of distances and Verteces for specified Area definition"""
+        tpr_pos = sph.toSpherical(ver._pos)
+        radi_array = np.linspace(tpr_pos._z,radius,3)
+        v_list=[]
+        for theta in range(10,3141,1000):
+            for phi in range(10,2*3141,2000):
+                for r in radi_array:
+                    v_list.append(self._classifier._dataset.getValueKDTree(ver._pos,1.0))
+        return radi_array,v_list                    
+                    
     def getAreaNN(self,ver,n):
         """ input pos: Vertex of Interest  n: Number of nearest neighbours
             output: tupple list of distances and Verteces for specified Area definition"""
@@ -103,7 +123,7 @@ class AreaExtractor:
         for i in ni:
             """remove duplicated IDS"""
             if i != ver._ID:
-                nn_list.append(self._classifier._dataset._vertexList[i])   
+                nn_list.append(self._classifier._dataset._vertexList[i]._mag)   
         return d,nn_list
         
         

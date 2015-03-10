@@ -569,12 +569,12 @@ class VTKData:
                 self._currentCell = self._cellList[neighbourID]
                 isFound,intPoint, self._currentCell = self._currentCell.trilinear(x)
                 if(isFound):
-                    print(x,intPoint)
+                    #print(x,intPoint)
                     #self._CurrentMaxStep, self._nextCell = self.getNextCell_StepSize(x,intPoint)
                     #self._firstSearch = False
-                    print("Cell Found", self._currentCell._ID)
+                    #print("Cell Found", self._currentCell._ID)
                     return intPoint
-        print("nearest neighbour didn't help",toSpherical(x))
+        print("nearest neighbour didn't help",x)
         for cell in self._cellList:
             self._currentCell = cell
             isFound,intPoint, self._currentCell = cell.trilinear(x)
