@@ -15,7 +15,7 @@ def testClassifier():
     data.loadFile('C:/out.1200.vtk')
     data.builtKDTree()
     
-    classifier = Classifier(data,'C:/m.out.1200.vtk' )
+    classifier = Classifier(data,'E:/m.out.1200.vtk' )
     classifier.featureExtraction()
     
 class Classifier:
@@ -79,14 +79,21 @@ class FeatureExtractor:
             output scalar value... may be changed later"""
         #unweighted for testing
         weightedValues = []
+        dsum =sum(weights)
+        dmax =max(weights)
+        k = len(weights)
+        i =0
         for diff in diffs:
             if diff < math.pi :
                 diffValue = math.exp(0.5*(diff- math.pi))
+                diffValue *= dsum-weights[i]-float((k-2)/k) 
                 weightedValues.append(diffValue)
             else:
                 diffValue = math.exp(0.5*(-diff + math.pi))
+                diffValue *= dsum-weights[i]-float((k-2)/k) 
                 weightedValues.append(diffValue)
-        mean = sum(weightedValues)/len(weightedValues)
+            i+=1    
+        mean = sum(weightedValues)
         return mean  
         
 class AreaExtractor:
