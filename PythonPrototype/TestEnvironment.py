@@ -7,32 +7,13 @@ Created on Sat Sep 06 11:22:36 2014
 from sphericalharmo import *
 import sphericalharmo as sph
 import datastructure2 as ds
+import cProfile
+import re
+from tabulate import tabulate
 
 
-def dipol_vf():
-    return    
 
-def test_Dipol_VF():
-    loadGaussCoefIGRF("../GausCoef.txt")
-    useIGRFonly() #overrites all other Coefficients
-    """define Vectorfield Positions in spherical coordinates"""
-    xf = []
-    for theta in range(10,2*3141,315):
-        for phi in range(10,3141,158):
-            for radi in range(292,1000,120):
-                tpr = ds.Point3D(theta/1000.0, phi/1000.0, radi/100.0)
-                xyz = toCartesian(tpr)
-                xf.append(xyz)          
-    """calculate VF Values"""
-    vf = []
-    for x in xf:
-        v = evalSHA(x,1.0)
-        print("Pos:",x,"Value:",v)
-        vf.append(v)
-    Vis.setVectorfield(xf,vf)
-    return
-
-def testRK_Dipol_SL(theta,phi,r,direction,tmax=1.0e+10,t0=0.8e-3,max_steps=1000):
+def testRK_Dipol_SL(theta,phi,r,direction,tmax=1.0e+10,t0=5.0e2,max_steps=4000):
     loadGaussCoefSimu("../../Gauss_RE.dat","../../Gauss_ICB.dat")
     #data = ds.AvsUcdAscii()
     #data.loadFile('E:/Uni/GeodynamicsProject/Datasets/out.1550.inp')
@@ -49,20 +30,40 @@ def testRK_Dipol_SL(theta,phi,r,direction,tmax=1.0e+10,t0=0.8e-3,max_steps=1000)
     print("Start new Streamline with:", tpr0,toSphericalVecfield(tpr0,v0),direction)
     #print(tpr0,toSphericalVecfield(tpr0,v0))
     i= 0 
-    dtmax = 5000.0
+    dtmax = 5.0e6
+    """ added constant stepsize for testing purposes"""
+    """while (max_steps>i):
+        if(((toSpherical(nextPos)._z)<2.0)):
+            print("inner core reached",toSpherical(nextPos))
+             #xf,vf,t2,xf2,vf2,tf2 = rk4(nextPos,nextVal,data.getValue,t,t0,direction)
+            break
+            #print("next pos spherical :",toSpherical(nextPos))
+        else:
+            xf,vf,t2,xf2,vf2,tf2 = rk4(nextPos,nextVal,evalSHA,t,t0,direction)        
+        nextPos = xf
+        nextVal = vf
+        t=t2
+        xf._z = xf._z *0.01
+        sl.append(xf)
+        vl.append(vf)
+        xf._z = xf._z *100
+        #print("step #",i,toSpherical(xf), vf,t)
+        if(i%10)==0:print("step #",i,toSpherical(xf), vf,t0)
+        i+=1"""
+        
     while (max_steps>i) and (t<tmax):
        # print(((t-t0)*100.0)/(tmax-t0),"% finished ..... ")
-        if(((toSpherical(nextPos)._z)<1.6)):
+        if(((toSpherical(nextPos)._z)<1.8)):
             print("inner core reached",toSpherical(nextPos))
             #xf,vf,t2,xf2,vf2,tf2 = rk4(nextPos,nextVal,data.getValue,t,t0,direction)
             break
         #print("next pos spherical :",toSpherical(nextPos))
         else:
             xf,vf,t2,xf2,vf2,tf2 = rk4(nextPos,nextVal,evalSHA,t,t0,direction)
-        """adapt stepsize"""
-        needAdapt= adaptStep(vf,vf2,t0)[0]
+            """adapt stepsize"""
+        needAdapt= adaptStepGearHairer(vf,vf2,t0)[0]
         while needAdapt:
-            needAdapt, t0 = adaptStep(vf,vf2,t0)
+            needAdapt, t0 = adaptStepGearHairer(vf,vf2,t0)
             #print("timestep after adapt",t0)
             if(t0>dtmax):         
                 t0=dtmax
@@ -78,23 +79,39 @@ def testRK_Dipol_SL(theta,phi,r,direction,tmax=1.0e+10,t0=0.8e-3,max_steps=1000)
         #print("step #",i,toSpherical(xf), vf,t)
         if(i%10)==0:print("step #",i,toSpherical(xf), vf,t0)
         i+=1
+        
     print("i",i,"sl[i-1]",toSpherical(sl[i-1]),"vl[i-1]",toSphericalVecfield(toSpherical(sl[-1]),vl[i-1]))
     Vis.addStreamLine(sl,vl)
     return
+
+def getSmallestGridSize():
+    data = ds.VTKData()
+    data.loadFile('C:/out.1200.vtk')
+    data.builtKDTree()
+    l_grid=[]
+    for ver in data._vertexList:
+        xtupple = (ver._pos._x,ver._pos._y,ver._pos._z)
+        d,ni = data._kdTree.query(xtupple,1) ## return the indices of the nearest neigbhour, d and ni are arrays
+        l_grid.append(d)
+    print(min(l_grid))
    
-def test_OC_only(theta,phi,r,direction,data,tmax=1.0e+10,t0=0.8e-5,max_steps=5000):
+def test_OC_only(theta,phi,r,direction,data,tmax=1.0e+10,t0=1.0e-10,max_steps=5000):
     sph.setData(data)
     sl=[]
     vl=[]
     t=t0
+    """dtmin is dependent on the OS (32 or 64 bit)"""
+    dtmin=1.0e-16
+    dtmax = 1.0e-10
     tpr0 = ds.Point3D(theta, phi,r)
     xyz0 = toCartesian(tpr0)
     v0 = evalSHA(xyz0, None)
+    dtmax = data._CurrentMaxStep
+    #print("dtmax_ first:",dtmax)
     sl.append(xyz0)
     vl.append(v0)
     nextVal=v0
     nextPos=xyz0
-    max_step=4.0e-5
     print("Start new Streamline with:", tpr0,toSphericalVecfield(tpr0,v0),direction)
     #print(tpr0,toSphericalVecfield(tpr0,v0))
     i= 0
@@ -104,16 +121,28 @@ def test_OC_only(theta,phi,r,direction,data,tmax=1.0e+10,t0=0.8e-5,max_steps=500
         if(((toSpherical(xf)._z)>=1.537983852128)):
             outOfBounds = True
             break
-        dtmax=data._currentCell.gridSize()/2.0
+       
+        dtmax = data._CurrentMaxStep
+        print("dtmax:",dtmax)
+        if(t0<dtmin):           
+            t0=dtmin
         if(t0>dtmax):           
             t0=dtmax
-        needAdapt= adaptStep(vf,vf2,t0)[0]
+        needAdapt= adaptStepGearHairer(vf,vf2,t0)[0]
+        print("Before while", needAdapt)
         while needAdapt:
-            needAdapt, t0 = adaptStep(vf,vf2,t0)
+            needAdapt, t0 = adaptStepGearHairer(vf,vf2,t0)
+            print("inside while", needAdapt)
             if(t0>dtmax):         
                 t0=dtmax
-                needAdapt = False                    
+                needAdapt = False
+                print("stepsize adapted 2") 
+            if(t0<dtmin):           
+                t0=dtmin
+                needAdapt = False
+                print("stepsize adapted 3")                    
             xf,vf,t2,xf2,vf2,tf2 = rk4(xf,vf,evalSHA,t,t0,direction)
+            dtmax = data._CurrentMaxStep
             if(((toSpherical(xf)._z)>=1.537983852128)):
                 outOfBounds = True
                 break
@@ -122,7 +151,8 @@ def test_OC_only(theta,phi,r,direction,data,tmax=1.0e+10,t0=0.8e-5,max_steps=500
         t=t2
         sl.append(xf)
         vl.append(vf)
-        if(i%100)==0:print("step #",i,toSpherical(xf), vf,t)
+        """if(i%100)==0:"""
+        print("--------- step #",i,toSpherical(xf), vf,t,"-------------")
         i+=1
     #print("i",i,"sl[i-1]",toSpherical(sl[i-1]),"vl[i-1]",toSphericalVecfield(toSpherical(sl[-1]),vl[i-1]))
     Vis.addStreamLine(sl,vl)
@@ -194,52 +224,9 @@ def project_on_boundary(x,v,r):
     return toCartesian(sp)
 
 
-def testSHA_SL(x,y,z,mx,my,mz):
-    #loadGaussCoefIGRF("../GausCoef.txt")
-    loadGaussCoefSimu("../../Gauss_RE.dat","../../Gauss_ICB.dat")
-    
-    sl=[]
-    vl=[]
-    tmax = 1000.0
-    #initial stepsize, optional
-    step = 0.8e-2
-    max_steps = 4000
-    t=step
-    tpr0 = ds.Point3D(0.75*math.pi, 0.5*math.pi,2.91)
-    xyz0 = toCartesian(tpr0)
-    v0 = evalSHA(xyz0, None)
-    sl.append(xyz0)
-    vl.append(v0)
-    nextVal=v0
-    nextPos=xyz0
-    i= 0        
-    while (max_steps>i) and (t<tmax):
-       # print(((t-step)*100.0)/(tmax-step),"% finished ..... ")
-        if(toSpherical(nextPos)._z<icb):
-            print(toSpherical(nextPos))
-            print("Inner Core reached")
-            break
-        xf, vf ,t2,xf2,vf2,tf2 = rk4(nextPos,nextVal,evalSHA,t,step)
-        #adapt stepsize
-        needAdapt = adaptStep(xf, vf,xf2,vf2,tf2)[0]
-        while needAdapt:
-            needAdapt, dt = adaptStep(xf, vf,xf2,vf2,tf2)
-            t1 = t+dt
-            x1,v1,t1,x2,v2,t2 = rk4(x0,v0,a,t1,dt)
 
-        nextPos = xf
-        nextVal = vf
-        t=t2
-        xfscaled = xf.mult(0.1)
-        sl.append(xfscaled)
-        vl.append(vf)
-        #print("step #",i,xf,vf)
-        i+=1     
-    
-    #vf = toSphericalVecfield(tpr,v)
-    #print(tpr,vf,v)
-    Vis.addStreamLine(sl,vl)
-    return
+
+
     
 def testBoundaryVecField():
     loadGaussCoefSimu("../../Gauss_RE.dat","../../Gauss_ICB.dat")
@@ -250,12 +237,12 @@ def testBoundaryVecField():
     
     xf_mantle=[]
     xf_oc = []
-    for theta in range(10,2*3141,315):
-        for phi in range(10,3141,158):
+    for theta in range(100,2*3141,700):
+        for phi in range(100,3141,350):
             tpr_m = ds.Point3D(theta/1000.0, phi/1000.0, 1.537983852128 + 1.0e-4)
-            tpr_oc = ds.Point3D(theta/1000.0, phi/1000.0, 1.537983852128 - 1.0e-4)
-            xyz_m = toCartesian(tpr_m)
-            xyz_oc = toCartesian(tpr_oc)
+            tpr_oc = ds.Point3D(theta/1000.0, phi/1000.0, 1.52)
+            xyz_m = ds.toCartesian(tpr_m)
+            xyz_oc = ds.toCartesian(tpr_oc)
             xf_mantle.append(xyz_m)
             xf_oc.append(xyz_oc)
     vf_mantle = []
@@ -263,53 +250,155 @@ def testBoundaryVecField():
     i=0
     for x_oc in xf_oc:
         i+=1
+        print(float(i)*100/len(xf_mantle))
         #print("OC>>>Pos:",toSpherical(x_oc) )
+        print("input pos: ", ds.toSpherical(x_oc))
         v = data.getValueKDTree(x_oc,1.0)
         if((i*100.0/len(xf_oc))%10)==0: print("Evaluation reached: " +str(i*100.0/len(xf_oc)) +"%")
        # print("OC>>>Pos:",x_oc ,"Value:",v)
         vf_oc.append(v)
+<<<<<<< HEAD
     i=0    
+=======
+    j=0    
+>>>>>>> origin/test01
     for x_m in xf_mantle:
+        j+=1
+        print(float(j)*100/len(xf_mantle))
         #print("MANTEL>>>Pos:",toSpherical(x_m) )
         i+=1
         v = evalSHA(x_m,1.0)
         if((i*100.0/len(xf_mantle))%10)==0: print("SHA Calc reached: " +str(i*100.0/len(xf_mantle)) +"%")
         #print("MANTEL>>>Pos:",x_m ,"Value:",v)
+        if((j*100.0/len(xf_mantle))%10)==0: 
+            print("Evaluation reached: " +str(j*100.0/len(xf_mantle)) +"%")
         vf_mantle.append(v)
+<<<<<<< HEAD
     #xf = xf_mantle + xf_oc
     #vf = vf_mantle + vf_oc    
     Vis.setVectorfield(xf_mantle,vf_mantle) #purple
     Vis.setVectorfield2(xf_oc,vf_oc)    #light blue
+=======
+        
+   # xf = xf_mantle + xf_oc
+   # vf = vf_mantle + vf_oc    
+    Vis.setVectorfield(xf_mantle,vf_mantle)  #purple
+    Vis.setVectorfield2(xf_oc,vf_oc) # light blue
+>>>>>>> origin/test01
     return    
 
-def testBoundaryVecField2():
+def testSHA_old_new():
     loadGaussCoefSimu("../../Gauss_RE.dat","../../Gauss_ICB.dat")
-    data = ds.VTKData()
-    data.loadFile('C:/out.1200.vtk')
-    data.builtKDTree()
+    vf_mantle = []
+    vf_oc = []
+    xf_mantle=[]
+    xf_oc = []
+    langles=[]
+    #theta = 1500
+    print("degree: 20","theta [0,pi],phi[0,2pi],r = cmb+1.0e-4")
+    print("pos","SHA result")
+    for theta in range(10,3141,500):
+        for phi in range(10,2*3141,250):
+            #phi =1500
+            ##choose verteces out of the data set -> avoid interpolation
+            tpr_oc = ds.Point3D(theta/1000.0, phi/1000.0, 1.537983852128 + 1.0e-4)
+            xyz_oc = toCartesian(tpr_oc)
+            vf_xyz_oc = sphericalHarmoAnalysisOld(xyz_oc)
+            vf_oc.append(vf_xyz_oc)
+            xf_oc.append(xyz_oc)
+            
+            tpr_m= tpr_oc
+            #tpr_m= toSpherical(xyz_oc).add(Point3D(0.0,0.0,0.5))
+            xyz_m = toCartesian(tpr_m)
+            xf_mantle.append(xyz_m)
+            vf_xyz_mantle = sphericalHarmoAnalysis(xyz_m)
+            vf_mantle.append(vf_xyz_mantle)
+            
+            """debugging"""
+            a= vf_xyz_oc._length()
+            b= vf_xyz_mantle._length()
+            dp = datastructure2.dot(vf_xyz_oc,vf_xyz_mantle)
+            
+            angle = math.acos( dp /(a*b) )
+            langles.append(angle)
+            #print("Old:",vf_xyz_oc,"new: ",vf_xyz_mantle)
+            print(tpr_oc,"Angle diff:", angle)
+            #print(" ------------------End of Block -------------------- ")
+            """ --- """
+            
+    #print("finished computation")       
+   #print("max angle:",max(langles),"min angle:",min(langles))
+    outputAngle=[max(langles)]
+    Vis.setVectorfield(xf_oc,vf_oc)#purple
+    Vis.setVectorfield2(xf_mantle,vf_mantle)#light blue
+    return outputAngle    
+
+def testBoundaryVecField2(data):
+    loadGaussCoefSimu("../../Gauss_RE.dat","../../Gauss_ICB.dat")
+    g,h = sph.getGaussCoef(1.6)
+    gl =  []
+    hl = []
+    for l in range(94):
+        gl.append(max(g[l]))
+        hl.append(max(h[l]))
+    print ("max g", max(gl))        
+    print ("max h", max(hl))
+    #data = ds.VTKData()
+    #if (not data._fileLoaded):
+       # data.loadFile('C:/out.1200.vtk')
+      #  data.builtKDTree()
     sph.setData(data)
     vf_mantle = []
     vf_oc = []
     xf_mantle=[]
     xf_oc = []
-    for theta in range(10,2*3141,315):
-        for phi in range(10,3141,158):
+    langles=[]
+    #theta = 1500
+    print("degree: 20","theta [0,pi],phi[0,2pi],r = cmb+1.0e-4")
+    print("pos","SHA result")
+    for theta in range(10,3141,500):
+        for phi in range(10,2*3141,250):
+            #phi =1500
             ##choose verteces out of the data set -> avoid interpolation
             tpr_oc = ds.Point3D(theta/1000.0, phi/1000.0, 1.537983852128 - 1.0e-4)
             xyz_oc = toCartesian(tpr_oc)
             xyz_tripple = (xyz_oc._x,xyz_oc._y,xyz_oc._z)
             di,oc_index = data._kdTree.query(xyz_tripple)
             xyz_oc = data._vertexList[oc_index]._pos
+            vf_xyz_oc = data._vertexList[oc_index]._mag
+            print("data",toSphericalVecfield(tpr_oc,vf_xyz_oc))
             vf_oc.append(data._vertexList[oc_index]._mag)
             xf_oc.append(xyz_oc)
             
+<<<<<<< HEAD
             xyz_m = xyz_oc.add(toCartesian(Point3D(0.0,0.0,1.0e-4)))
+=======
+            tpr_m= toSpherical(xyz_oc).add(Point3D(0.0,0.0,1.0e-2))
+            #tpr_m= toSpherical(xyz_oc).add(Point3D(0.0,0.0,0.5))
+            xyz_m = toCartesian(tpr_m)
+>>>>>>> origin/test01
             xf_mantle.append(xyz_m)
-            vf_mantle.append(evalSHA(xyz_m,1.0))
+            vf_xyz_mantle = sphericalHarmoAnalysis(xyz_m)
+            vf_mantle.append(vf_xyz_mantle)
             
-    Vis.setVectorfield(xf_mantle,vf_mantle)
-    Vis.setVectorfield2(xf_oc,vf_oc)
-    return    
+            """debugging"""
+            a= vf_xyz_oc._length()
+            b= vf_xyz_mantle._length()
+            dp = datastructure2.dot(vf_xyz_oc,vf_xyz_mantle)
+            
+            angle = math.acos( dp /(a*b) )
+            langles.append(angle)
+            #print("OC:",vf_xyz_oc,"Mantle: ",vf_xyz_mantle)
+            #print(tpr_oc,"Angle:", angle)
+            #print(" ------------------End of Block -------------------- ")
+            """ --- """
+            
+    #print("finished computation")       
+   #print("max angle:",max(langles),"min angle:",min(langles))
+    outputAngle=[max(langles)]
+    Vis.setVectorfield(xf_oc,vf_oc)#purple
+    Vis.setVectorfield2(xf_mantle,vf_mantle)#light blue
+    return outputAngle    
 
 def DS_compared_Vecfield():
     loadGaussCoefSimu("../../Gauss_RE.dat","../../Gauss_ICB.dat")
@@ -415,21 +504,15 @@ def perfectDipol(x,dt):
     vs = ds.Point3D(x_dipol,y_dipol,z_dipol)
     return vs
  
-def GridTestVis(num_Cells):
-    data = ds.VTKData()
-    data.loadFile('C:/out.1200.vtk')
-    #Vis.initVertexBuffer(data._vertexList)
-    Vis.setCellList(data._cellList)
-    for i in range(1,len(data._cellList),len(data._cellList)/num_Cells):
-        verts=[]
-        for ver in data._cellList[i]._verts:
-            verts.append(ver._ID)
-        print(verts)
-   
+
+
+        
+
 def main():
-    #data= ds.VTKData()
-    #data = loadData('C:/out.1200.vtk')
+    data= ds.VTKData()
+    data = loadData('C:/out.1200.vtk')
     #Vis.built_cm_rainbow(data)
+<<<<<<< HEAD
     #data.builtKDTree()
     #GridTestVis(5000)                              ##define number of Cells to be visible
     #DS_compared_Vecfield()
@@ -441,20 +524,48 @@ def main():
        # testRK_Dipol_SL(0.3,phi/1000.0,2.3,"forward")
        # testRK_Dipol_SL(0.6,phi/1000.0,2.3,"forward")
     """Test of whole Streamline Vis""" 
+=======
+    data.builtKDTree()
+    """Test of Dataset Streamline Vis""" 
+>>>>>>> origin/test01
     #for phi in range(200,2*3141,600):
      #   test_OC_only(1.4,phi/1000.0,0.7,"forward",data)
       #  test_OC_only(1.4,phi/1000.0,0.7,"backward",data)
     #test_OC_only(1.4,0.6,0.7,"forward",data)
     #test_OC_only(1.0,0.6,1.0,"forward",data)
-    ##----degenereted case
-    #testRK_Whole_SL(1.4,0.6,1.1,"forward")
-    ##
-    #testRK_Whole_SL(0.8,0.6,1.1,"forward")
+
+    """Test of CMB behaviour, critical regions"""
+    sph.setDegree(30)
+    #cProfile.run('testBoundaryVecField2()') 
+    testBoundaryVecField2(data)
+    #angleTable= []
+    #print("degree", "max" , "min")
+    #for deg in range(5,95):
+     #   sph.setDegree(deg)
+      #  angleTable.append(testBoundaryVecField2(data))
+    
+    #print tabulate(angleTable,[deg for deg in range(5,95)])
+
+    """Test of Extrapolation Method """
+    #for phi in range(10,2*3141,500):
+        #testRK_Dipol_SL(2.8,phi/1000.0,2.8,"forward")
+        #testRK_Dipol_SL(0.3,phi/1000.0,2.3,"forward")
+        #testRK_Dipol_SL(0.6,phi/1000.0,2.3,"forward")
+    """Test different Degrees"""
+    #sph.setDegree(10)
+    #testRK_Dipol_SL(2.8,0.2,2.8,"forward")
+    #sph.setDegree(30)
+    #testRK_Dipol_SL(2.8,0.2,2.8,"forward")
+    #sph.setDegree(50)
+    #testRK_Dipol_SL(2.8,0.2,2.8,"forward")
+    
     """test of Integration Method"""
     #endpoint = testPerfectDipol(0.2,10/1000.0,2.9,"forward")
     #endpoint1 = testPerfectDipol(endpoint._x,endpoint._y,endpoint._z,"backward")
     #err=endpoint._x - endpoint1._x + endpoint._y - endpoint1._y +endpoint._z - endpoint1._z
     #print("Error for RK4: ", err)
+    
+    
     """end of Test"""
     NeHeGL.main()
 

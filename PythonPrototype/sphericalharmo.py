@@ -51,8 +51,25 @@ g_data = None
 isOuterCore = False
    # isInnerCore = False
 isMantle = False
+g_degree = 3
 
 
+def testSphericalHarmo():
+    """ define an input array of points here"""
+    loadGaussCoefSimu("../../Gauss_RE.dat","../../Gauss_ICB.dat")
+    ps = []
+    for phi in range(10,2*3141,200):
+        for theta in range(10,3141,100):
+            for r in range (1537,10000,300):
+                ps.append(toCartesian(Point3D(phi/1000.0,theta/1000.0,r/1000.0)))
+    
+    for p in ps:
+        Legendre = SN_Legendre(math.cos(p._x),95)
+        #print("Legendre funtion at Pos p: ", p, Legendre )
+        deltaLegendre = deltaSN_Legendre(Legendre,95)
+        #print("Derivation of Legendre funtion at Pos p: ", p, deltaLegendre )
+        sph = sphericalHarmoAnalysis(p)
+        print("Result of Spherical Harmo Equation at Pos p:",p, sph )
 
 def setData(data):
     global g_data
@@ -62,15 +79,15 @@ def evalSHA(x,dt):
     global isOuterCore
     global isMantle            
     if ((toSpherical(x)._z)<=ocb) and ((toSpherical(x)._z)>icb):
-        result = g_data.getValueNNInt(x,dt) 
-        #if not isOuterCore:print(">>>>>>>>>>>>>>>>>>Going from Mantle to OC: Pos:",toSpherical(x)," Value:",toSpherical(result))
+        result = g_data.getValueKDTree(x,dt) 
+        if not isOuterCore:print(">>>>>>>>>>>>>>>>>>Going from Mantle to OC: Pos:",toSpherical(x)," Value:",toSpherical(result))
         #print("OC")
         isOuterCore = True
         isMantle = False
         return result
     else:
         result = sphericalHarmoAnalysis(x)
-    #if not isMantle:print(">>>>>>>>>>>>>>>>>>Going from OC to Mantle: Pos:",toSpherical(x)," Value:",toSpherical(result))
+    if not isMantle:print(">>>>>>>>>>>>>>>>>>Going from OC to Mantle: Pos:",toSpherical(x)," Value:",toSpherical(result))
     #print("Mantle")
     isMantle = True
     isOuterCore = False         
@@ -84,34 +101,41 @@ def useIGRFonly():
     return
     
 def getGaussCoef(radius):
-    
+    return gRE,hRE
     """IGRF only for testing pruposes"""
-    if (radius>=ocb):
+    """if (radius>=ocb):
        # print("RE used",radius)
         return gRE,hRE
     elif (radius <=icb):
       #  print("ICB used",radius)
         return gICB,hICB
     else:
-        print("Error in radius",radius)
+        print("Error in radius",radius)"""
 
+def setDegree(n):
+    global g_degree
+    g_degree=n
 def sphericalHarmoAnalysis(x):
     """Evaluates the spherical harmonics equation for the magnetic field, with degree n
     @Input: Point3D Position
     @Output: Point3D Magnetic Field
     """
-    ##Coord Transformation
-    #print("Pos Cartesian: "+ str(x._x)+","+str(x._y)+","+str(x._z))
-    #print(x)
-    v = toSpherical(x)
-    #print(v)
-    #print("Pos Spherical: "+ str(v._x)+","+str(v._y)+","+str(v._z))
-    result=Point3D(0,0,0)
 
+    v = toSpherical(x)
+    #v._x = v._x -math.pi/2.0   
+    result=Point3D(0,0,0)
+    #temp1 = v._x
+    #temp2 = v._y
+    #v._y = temp1
+    #v._x = temp2
     """Get Gaus Coef respective to radius""" 
-    degree=95
+    degree=g_degree
     g,h = getGaussCoef(v._z)
-    Lp = SN_Legendre(math.cos(v._x),degree)
+    
+        
+    
+    Lp = SN_Legendre(v._x,degree)
+    #Lp_sin = SN_Legendre(v._x-pi/2.0,degree)
     dLp = deltaSN_Legendre(Lp,degree)
     """for l in range(1,n):
         for m in range(l+1):
@@ -121,13 +145,20 @@ def sphericalHarmoAnalysis(x):
             result._y+= -(ar/(v._z))**(l +2)*SN(m,l,cos(v._x))*(-g[l][m]*m*math.sin(m*v._y)+h[l][m]*m*math.cos(m*v._y))
             result._z+= (l +1)*((ar/v._z)**(l +2))*SN(m,l,cos(v._x))*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
     """
+   # print(cos(v._x))
     """Using implicit Legendre"""
-    for l in range(1,degree):
+    for l in range(1,degree+1):
         for m in range(l+1):
-            result._x+= -((ar/v._z)**(l +2))*(-math.sin(v._x))*dLp[l][m]*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
-            result._y+= -(ar/(v._z))**(l +2)*Lp[l][m]*(-g[l][m]*m*math.sin(m*v._y)+h[l][m]*m*math.cos(m*v._y))
-            result._z+= (l +1)*((ar/v._z)**(l +2))*Lp[l][m]*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
-
+            """
+            result._x+= -((ar/v._z)**(l +2))*dLp[m][l]*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
+            result._y+= (ar/(v._z))**(l +2)* ((Lp[m][l]*m)/math.sin(v._x)) * (g[l][m]*math.sin(m*v._y)-h[l][m]*math.cos(m*v._y))
+            result._z+= (l +1)*((ar/v._z)**(l +2))*Lp[m][l]*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
+            #print("SHA results",l,m,result)
+            """
+            result._x+= -((ar/v._z)**(l +2))* dLp[m][l]*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
+            result._y+= -(ar/(v._z))**(l +2)* Lp[m][l]*m / math.sin(v._x) * (-g[l][m]*math.sin(m*v._y)+h[l][m]*math.cos(m*v._y))
+            result._z+= (l +1)*(ar/v._z)**(l+2)*Lp[m][l]*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
+            
     """    for l in range(1,n+1):
         for m in range(l+1):
             result._x+=((a/v._z)**(l+1))*deltaSN(m,l,math.cos(v._x))*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
@@ -135,10 +166,44 @@ def sphericalHarmoAnalysis(x):
             result._y+=((a/v._z)**(l+1))*SN(m,l,cos(v._x))*(-g[l][m]*m*math.sin(m*v._y)+h[l][m]*m*math.cos(m*v._y))
             result._z+=(l+1)*((a/v._z)**(l+2))*SN(m,l,cos(v._x))*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
             #print(l,m,result)"""
-#    print("sha,spherical:",result)
+    #result._x = cos(result._x)
+    #result._z= result._z*(-1.0 ) 
+    print("new",v,result )
+    #print("sha,spherical:",result)
+    #vf = result
     vf = toCartesianVecfield(v,result)
-#    print("sha,cartesian:",vf)
+
     return vf
+
+def sphericalHarmoAnalysisOld(x):
+    """Evaluates the spherical harmonics equation for the magnetic field, with degree n
+    @Input: Point3D Position
+    @Output: Point3D Magnetic Field
+    """
+
+    v = toSpherical(x)
+    result=Point3D(0,0,0)
+    #v._x = v._x +math.pi/2.0  
+   # temp1 = v._x
+   # temp2 = v._y
+   # v._y = temp1
+  #  v._x = temp2
+    """Get Gaus Coef respective to radius""" 
+    g,h = getGaussCoef(v._z)
+    for l in range(1,5):
+        for m in range(l+1):
+            result._y+= ((ar/v._z)**(l +2))*deltaSN(m,l,math.cos(v._x))*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
+            result._x+= (ar/(v._z))**(l +2)* (SN(m,l,cos(v._x))/math.sin(v._x)) * (g[l][m]*math.sin(m*v._y)-h[l][m]*math.cos(m*v._y))
+            result._z+= -(l +1)*((ar/v._z)**(l +2))*SN(m,l,cos(v._x))*(g[l][m]*math.cos(m*v._y)+h[l][m]*math.sin(m*v._y))
+    
+
+    print("old",v,toSpherical(result) )
+    #print("sha,spherical:",result)
+    vf = result
+    #vf = toCartesian(result)
+
+    return vf
+
 
 #Schmidt-Normalized Legendrefunction
 def SN(m,l,x):
@@ -165,42 +230,53 @@ def SN_Legendre(x,degree):
     """Schmid Normalized Legendrefunction
        returns a 2D Array with evaluated Legendre functions at position x
        use as L(m,l,x) = p_sn[m,l]""" 
-    p_sn=[[0 for xl in range(degree)]*degree for xl in range(degree)]
+    sinx= sin(x)   
+    p_sn=[[0.0 for xl in range(degree+1)]*(degree+1) for xl in range(degree+1)]
+    p_sn[0][0] = 1.0
+    p_sn[0][1] = cos(x)
+    for l in range(2,degree+1):
+        p_sn[0][l]=p_sn[0][l-1] * float(2*l -1)/float(l) * cos(x) - p_sn[0][l-2] * float(l-1)/float(l)        
     """Normalization"""
-    df=[1.0 for xl in range(degree+1)]    
-    for m in range(1,degree):   
-        #df.insert(m,1.0)
-        for k in range(1,m):
+      
+    for m in range(1,degree+1):   
+        #df.insert(m,1.0
+        df=[1.0 for xl in range(degree+2+1)]  
+        for k in range(1,m+1):
             df[m]=df[m] * float(2*k-1) / float(2*k)
-        df[m+1] = sqrt( 2.0 * df[m] * float(2*m+1) ) * cos(x)
+        """ cos(X) is critical here """
+        df[m+1] = sqrt( 2.0 * df[m] * float(2*m +1) ) * cos(x)
         df[m] = sqrt(2.0*df[m])
         
         if( m < degree-1):
-            for l in range(m+2,degree):
-                df[l]=( cos(x) * float(2*l-1) * df[l-1] - sqrt( float( (l-1)*(l-1) - m*m )) * df[l-2] ) / sqrt( float( l*l - m*m ))
-        
-        for l in range(m,degree):
-            p_sn[m][l]=df[l] * sin(x)**m
+            for l in range(m+2,degree+1):
+                df[l]=( cos(x) * float(2*l -1) * df[l-1] - sqrt( float( (l-1)*(l-1) - m*m )) * df[l-2] ) / sqrt( float( l*l - m*m ))        
+                
+        for l in range(m,degree+1):
+            p_sn[m][l]=df[l]
+            for m1 in range(1,m+1):
+                p_sn[m][l] = p_sn[m][l]*sin(x)
     return p_sn
 
 def deltaSN_Legendre(p_sn,degree):
    """Schmid Normalized Legendrefunction
    returns a 2D Array with evaluated Legendre functions at position x
    use as L(m,l,x) = p_sn[m,l]""" 
-   dp_sn=[[0 for xl in range(degree)]*degree for xl in range(degree)]
+   dp_sn=[[0.0 for xl in range(degree+1)]*(degree+1) for xl in range(degree+1)]
    """Normalization"""
    dp_sn[0][0] = 0.0
-   for l in range(1,degree):
+   for l in range(1,degree+1):
        dp_sn[0][l] = - sqrt( float(l*(l+1)/2) ) * p_sn[1][l]
    dp_sn[1][1]=p_sn[0][1]
 
    if degree < 2: return dp_sn
-   for l in range(2,degree):
+   for l in range(2,degree+1):
        dp_sn[1][l]= 0.5 * ( sqrt( float( 2*l*(l+1) ) ) * p_sn[0][l] - sqrt( float((l-1)*(l+2)) ) * p_sn[2][l] )
+       
+   for l in range(2,degree+1):
        dp_sn[l][l]= 0.5 * sqrt(float(2*l))*p_sn[l-1][l]
    if degree <3: return dp_sn
-   for l in range(3,degree):
-       for m in range(2,l-1):
+   for l in range(3,degree+1):
+       for m in range(2,l-1+1):
            dp_sn[m][l] = 0.5* ( sqrt( float( (l+m)*(l-m+1) ) ) *p_sn[m-1][l] - sqrt( float( (l-m)*(l+m+1) ) ) *p_sn[m+1][l] )
    return dp_sn
    
@@ -310,7 +386,7 @@ def toSpherical(x):
     #theta
     v._x = math.acos(x._z/x._length())
     #phi
-    v._y = math.atan2(x._y,x._x)
+    v._y = math.atan2(x._y,x._x) 
     #r
     v._z = x._length()
     return v
@@ -329,12 +405,48 @@ def toCartesianVecfield(x,v):
     """ Pos x has to be in spherical coordinates
     """
     vf=Point3D(0,0,0)
-    vf._x = v._z*math.sin(x._x)*math.cos(x._y) + v._x*math.cos(x._x)*math.cos(x._y)- v._y*math.sin(x._y)
-    vf._y = v._z*math.sin(x._x)*math.sin(x._y) + v._x*math.cos(x._x)*math.sin(x._y)+ v._y*math.cos(x._y)
-    vf._z = v._z*math.cos(x._x) - v._x*math.sin(x._x)
+    #v._x *= (-1.0)
+   # v._z *= (-1.0)
+    vf._x = v._z *(sin(x._x))*cos(x._y) + v._x*(cos(x._x)*cos(x._y)) + v._y * (-sin(x._x))
+    vf._y = v._z *(sin(x._x))*sin(x._y) + v._x*cos(x._x)*sin(x._y) + v._y * cos(x._y)
+    vf._z = v._z *cos(x._x)  + v._x * (-sin(x._x))
+    #vf._x =  v._y*math.sin(x._y)
+    #vf._y =  v._x*math.cos(x._x)*math.sin(x._y)
+    #vf._z =  v._z*math.cos(x._x) 
     return vf
 
 
+def adaptStepGearHairer(v1,v2,dt):
+    """
+    Input Position, Vector, time(refering to v(t) as a vectorfield), current "time" t, an initial stepsize dt 
+    Output boolean,adapted stepsize
+    Domain specific knowledge regarding the Vectorfield can be added here, to speed up the estimation of the stepsize
+    """
+    #Error respective to cos(angle) with angle between the two steps 
+    # 1%    = 0.9980267284282716
+    # 0.1 % = 0.999980261
+    tol = 0.9991
+    tol_up = tol * 0.999
+    tol_down = tol *1.00001
+    error = datastructure2.dot(v1,v2)/( v1._length() * v2._length() ) 
+    if error == 1.0: error = 1.0- 1.0e-16 #to get rid of numerical errors, double precision
+    #print(error)
+   # v = 0.0001 #tolerance scaling
+    dtn = dt
+    #error handling is inverted as it refers to the cos(angle) the nearer it is to 1.0 the better
+    if error < tol_up: 
+        #print(datastructure.dot(v1,v2)/(v1._length()*v2._length() ),"error too high")
+        dtn= ( (1.0-tol) / (1.0-error) )**(1.0/4.0)  * dt
+        #print("stepsize decreased",dtn)
+        return True, dtn
+    #increase stepsize when error is very small
+    elif error > tol_down:
+     #   print(datastructure.dot(v1,v2)/(v1._length()*v2._length() ),"error too low")
+        dtn= ( (1.0-tol) / (1.0-error) )**(1.0/4.0)  * dt
+        #print("stepsize increased",dtn)        
+        return True, dtn
+    else:
+        return False, dtn    
     
 def adaptStep(v1,v2,dt):
     """
@@ -345,20 +457,21 @@ def adaptStep(v1,v2,dt):
     #Error respective to cos(angle) with angle between the two steps 
     # 1%    = 0.9980267284282716
     # 0.1 % = 0.999980261
-    err_up =  0.9999    
-    err_down = 0.99999
+    err_up =  0.999    
+    err_down = 0.9999
     dtn = dt    
     #decrease stepsize when error is too high 
+    #error handling is inverted as it refers to the cos(angle) the nearer it is to 1.0 the better
     if (datastructure2.dot(v1,v2)/( v1._length() * v2._length() ) ) < err_up: 
         #print(datastructure.dot(v1,v2)/(v1._length()*v2._length() ),"error too high")
-        dtn/= 5.0
-        #print("stepsize decreased",dtn)
+        dtn/= 10.0
+        print("stepsize decreased",dtn)
         return True, dtn
     #increase stepsize when error is very small
     elif (datastructure2.dot(v1,v2)/(v1._length()*v2._length() ) ) > err_down:
      #   print(datastructure.dot(v1,v2)/(v1._length()*v2._length() ),"error too low")
-        dtn*=2.0
-        #print("stepsize increased",dtn)        
+        dtn*=9.0
+        print("stepsize increased",dtn)        
         return True, dtn
     else:
         return False, dtn
@@ -555,6 +668,8 @@ def loadGaussCoefSimu(filenameRE,filenameICB):
             else:
                 #print("GausCoeffs for ICB Area read")
                 break
+    #for i in range(0,96):        
+       # print(i, "max g:", max(gRE[i]), "max h:", max(hRE[i]))
     return gRE,hRE,gICB,hICB                
 
 def main():

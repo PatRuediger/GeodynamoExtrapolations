@@ -202,7 +202,7 @@ def streamLine(pos,value):
         glEnd();
     return
 
-def drawVectorfield(xf,vf,scale=3):
+def drawVectorfield(xf,vf,scale):
     """input are two arrays of Point3D and a scaling factor"""
     for i in range(len(xf)-1):
         arrowGlyph(xf[i],vf[i],scale)
@@ -227,9 +227,9 @@ def drawStreamLines():
     global g_streamLineList
     for sl in g_streamLineList:
         for i in range(len(sl[0])-1):
-            val = sl[1][i]._length()
-            r,g,b = cm_rainbow(val)
-            glColor4f(r,g,b,1.0);
+           # val = sl[1][i]._length()
+           # r,g,b = cm_rainbow(val)
+           # glColor4f(r,g,b,1.0);
             glColor4f(1.0,0.1,0.1,1.0)
             glBegin( GL_LINES );
             glVertex3f (sl[0][i]._x,sl[0][i]._y,sl[0][i]._z);
@@ -287,7 +287,7 @@ def drawWireFrame():
     global g_cellList
     glLineWidth(0.1)
    # print("Drawing Wireframe")
-    for i in range (100,len(g_cellList),len(g_cellList)/5000):
+    for i in range (len(g_cellList)):
         drawSingleWire(g_cellList[i])
     #num_cores = multiprocessing.cpu_count()
     #Parallel(n_jobs=num_cores)(delayed(drawSingleWire)(cell) for cell in g_cellList)
@@ -361,6 +361,7 @@ def Draw ():
     glMultMatrixf(g_Transform);										# // NEW: Apply Dynamic Transform
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable( GL_BLEND );
+<<<<<<< HEAD
     glColor4f(0.8,0.1,1.0,1.0); #purple
     drawVectorfield(g_vecFieldPos,g_vecFieldValue,0.3)
     glColor4f(0.1,0.8,1.0,1.0); #light blue
@@ -368,6 +369,16 @@ def Draw ():
     glColor4f(1.0,0.1,0.1,1.0)
    # drawStreamLines()
 #    drawWireFrame()
+=======
+    glColor4f(0.8,0.1,1.0,1.0);
+    drawVectorfield(g_vecFieldPos,g_vecFieldValue,0.5)
+    glColor4f(0.1,0.8,1.0,1.0);
+    drawVectorfield(g_vecFieldPos2,g_vecFieldValue2,0.5)
+    #glColor4f(1.0,0.1,0.1,1.0)
+    #drawStreamLines()
+    #glEnable(GL_CULL_FACE)
+    #drawWireFrame()
+>>>>>>> origin/test01
     #streamLine(g_streamLinePos,g_streamLineValue)
     glPopMatrix();													# // NEW: Unapply Dynamic Transform
     
