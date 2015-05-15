@@ -8,7 +8,7 @@ Implemented Feature Extractor for Angular Direction Changing Rate
 """
 
 import numpy as np
-from math import *
+import math
 from abc import ABCMeta
 
 class FeatureExtratorADCR(object):
@@ -37,11 +37,18 @@ class FeatureExtratorADCR(object):
            output : scalar value"""
         anglediff=[]        
       #  v0p = self._classifier.GetPoint(v0)
-        v0v = self._classifier.GetPointDataByID(v0,self._valueID)
+        v0v = self._classifier.GetPointDataByName(self._valueID,v0)
+        #print v0,v0v
+        print self._classifier._numPts
         for ver in area[1]:
            # verp =  self._classifier.GetPoint(ver)
-            verv =  self._classifier.GetPointDataByID(ver,self._valueID)
-            diff =  math.acos(np.dot(v0v,verv) / (np.linalg.norm(v0v)*np.linalg.norm(verv) ) )
+            verv =  self._classifier.GetPointDataByName(self._valueID,ver)
+            #print ver,verv
+            #print np.dot(v0v,verv) , (np.linalg.norm(v0v)*np.linalg.norm(verv)) 
+            if verv == v0v:
+            	diff = 0.0
+            else :
+            	diff =  math.acos(np.dot(v0v,verv) / (np.linalg.norm(v0v)*np.linalg.norm(verv) ) )
             anglediff.append(diff)
         output = self.getFeatureValue(anglediff,area[0])
         return output
@@ -68,7 +75,7 @@ class FeatureExtratorADCR(object):
         """
         area = self._classifier._areaExtractor._VertexList , self._classifier._areaExtractor._DistanceList
         for ver in range(0,self._classifier._numPts):
-            subArea = self._classifier.GetKDTree().query(area[0].GetPoint(ver),NNRange)
+            subArea = self._classifier.GetKDTree().query(area[0].GetPoint(ver),self._NNRange)
             value = self.VF_Angle_Diff(ver,subArea)
             self._featureMap[ver] = value
     
