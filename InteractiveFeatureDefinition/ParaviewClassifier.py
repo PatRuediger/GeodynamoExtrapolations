@@ -29,6 +29,7 @@ class PWDatastructure(object):
     def __init__(self, dataRef):
         self._dataRef = dataRef   
         self._numPts = self._dataRef.GetPoints().GetNumberOfPoints()
+        print "Preocessing " + str(self._numPts) + " Data Points"
         vertexListTriples = []
         for i in range(0,self._numPts):
             vertexListTriples.append(self._dataRef.GetPoint(i))

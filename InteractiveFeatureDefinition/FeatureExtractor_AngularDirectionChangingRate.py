@@ -39,7 +39,6 @@ class FeatureExtratorADCR(object):
       #  v0p = self._classifier.GetPoint(v0)
         v0v = self._classifier.GetPointDataByName(self._valueID,v0)
         #print v0,v0v
-        print self._classifier._numPts
         for ver in area[1]:
            # verp =  self._classifier.GetPoint(ver)
             verv =  self._classifier.GetPointDataByName(self._valueID,ver)
@@ -73,11 +72,15 @@ class FeatureExtratorADCR(object):
     def evaluate(self):
         """ evaluates the defined feature and fills the featureMap
         """
+        count = 0
         area = self._classifier._areaExtractor._VertexList , self._classifier._areaExtractor._DistanceList
         for ver in range(0,self._classifier._numPts):
-            subArea = self._classifier.GetKDTree().query(area[0].GetPoint(ver),self._NNRange)
-            value = self.VF_Angle_Diff(ver,subArea)
-            self._featureMap[ver] = value
+        	count +=1
+        	subArea = self._classifier.GetKDTree().query(area[0].GetPoint(ver),self._NNRange)
+        	value = self.VF_Angle_Diff(ver,subArea)
+        	self._featureMap[ver] = value
+        	if ( ( (float(count) / self._classifier._numPts)*100)  % 10 ) ==0 :
+				print str((float(count) / self._classifier._numPts)*100 )+ "%"
     
     def getInterpolatedFeature(self,pos):
         """ In Case the global interpolation method is not sufficient
